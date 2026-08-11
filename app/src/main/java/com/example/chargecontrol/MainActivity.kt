@@ -40,10 +40,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.chargecontrol.network.NetworkModule
 import com.example.chargecontrol.ui.MainScreen
+import com.example.chargecontrol.ui.SettingsScreen
 import com.example.chargecontrol.ui.WallboxViewModel
 import com.example.chargecontrol.ui.theme.ChargeControlTheme
 
 private const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+
+private enum class Screen { Main, Settings }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +67,8 @@ private fun hasLocalNetworkPermission(context: android.content.Context): Boolean
 fun ChargeControlApp() {
     val context = LocalContext.current
     val activity = context as Activity
+
+    SettingsRepository.init(context)
 
     var hasPermission by remember { mutableStateOf(hasLocalNetworkPermission(context)) }
     var permissionRequestedOnce by remember { mutableStateOf(false) }
@@ -95,6 +100,13 @@ fun ChargeControlApp() {
                 context.startActivity(intent)
             }
         )
+        return
+    }
+
+    var currentScreen by remember { mutableStateOf(Screen.Main) }
+
+    if (currentScreen == Screen.Settings) {
+        SettingsScreen(onBack = { currentScreen = Screen.Main })
         return
     }
 
@@ -131,7 +143,7 @@ fun ChargeControlApp() {
         onErrorShown = viewModel::errorShown,
         onPhasesSelected = viewModel::setPhases,
         onMinCurrentChanged = viewModel::setMinCurrent,
-        onSettingsClick = {}
+        onSettingsClick = { currentScreen = Screen.Settings }
     )
 }
 
