@@ -14,7 +14,7 @@ data class LoadpointDto(
     val offeredCurrent: Double,
     val connected: Boolean,
     val charging: Boolean,
-    val minCurrent: Int
+    val minCurrent: Double
 )
 
 @Serializable

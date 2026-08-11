@@ -18,6 +18,7 @@ import okhttp3.ResponseBody
 import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
+import kotlin.math.roundToInt
 
 data class UiState(
     val mode: String = "",
@@ -123,7 +124,7 @@ class WallboxViewModel(
                     mode = loadpoint.mode,
                     phasesConfigured = loadpoint.phasesConfigured,
                     offeredCurrent = loadpoint.offeredCurrent,
-                    minCurrent = loadpoint.minCurrent,
+                    minCurrent = loadpoint.minCurrent.roundToInt(),
                     connected = loadpoint.connected,
                     charging = loadpoint.charging,
                     isLoading = false,

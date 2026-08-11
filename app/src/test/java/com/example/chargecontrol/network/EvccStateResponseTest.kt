@@ -39,7 +39,7 @@ class EvccStateResponseTest {
         assertEquals(9.5, loadpoint.offeredCurrent, 0.0)
         assertEquals(true, loadpoint.connected)
         assertEquals(true, loadpoint.charging)
-        assertEquals(6, loadpoint.minCurrent)
+        assertEquals(6.0, loadpoint.minCurrent, 0.0)
     }
 
     @Test

@@ -41,7 +41,7 @@ class WallboxViewModelTest {
         offeredCurrent: Double = 0.0,
         connected: Boolean = false,
         charging: Boolean = false,
-        minCurrent: Int = 6
+        minCurrent: Double = 6.0
     ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent)
 
     private class FakeEvccApi(
@@ -149,6 +149,7 @@ class WallboxViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertEquals("evcc-Fehler (500)", viewModel.uiState.value.errorMessage)
+        assertEquals(1, evccApi.fetchCount)
     }
 
     @Test
@@ -253,7 +254,7 @@ class WallboxViewModelTest {
 
     @Test
     fun `setMinCurrent posts the new current and refreshes state`() = runTest {
-        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(minCurrent = 10))))
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(minCurrent = 10.0))))
         val goeApi = FakeGoeApi()
         val viewModel = WallboxViewModel(evccApi, goeApi)
 

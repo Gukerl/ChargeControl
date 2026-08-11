@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -144,14 +146,9 @@ private fun AdvancedSettings(
     onPhasesSelected: (Int) -> Unit,
     onMinCurrentChanged: (Int) -> Unit
 ) {
-    var unlocked by remember { mutableStateOf(false) }
-    // Deliberately re-synced from the live value whenever it changes (poll refresh,
-    // or the refetch after a successful change) rather than tracked as fully
-    // independent drag state — simplest correct behavior for this app's scope.
-    // A mid-drag jump is possible only if a poll lands during the ~1-2s a drag
-    // takes, which is rare enough at a 7s poll interval not to warrant more
-    // machinery (e.g. tracking isDragging separately) here.
-    var sliderValue by remember(uiState.minCurrent) { mutableStateOf(uiState.minCurrent) }
+    var unlocked by rememberSaveable { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<Int?>(null) }
+    val sliderValue = pending ?: uiState.minCurrent
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -190,11 +187,14 @@ private fun AdvancedSettings(
             ) { onPhasesSelected(3) }
         }
 
-        Text("Ladestrom: $sliderValue A", style = MaterialTheme.typography.labelLarge)
+        Text("Mindest-Ladestrom: $sliderValue A", style = MaterialTheme.typography.labelLarge)
         Slider(
             value = sliderValue.toFloat(),
-            onValueChange = { sliderValue = it.roundToInt() },
-            onValueChangeFinished = { onMinCurrentChanged(sliderValue) },
+            onValueChange = { pending = it.roundToInt() },
+            onValueChangeFinished = {
+                pending?.let(onMinCurrentChanged)
+                pending = null
+            },
             valueRange = 6f..16f,
             steps = 9,
             enabled = unlocked
@@ -212,7 +212,7 @@ private fun SelectableButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(56.dp),
+        modifier = modifier.heightIn(min = 56.dp),
         enabled = enabled && !isActive
     ) {
         Text(label)
