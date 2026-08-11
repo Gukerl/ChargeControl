@@ -226,13 +226,13 @@ Each test calls `initWithStore` with a fresh `FakeKeyValueStore` in `@Before`, s
 
 - [ ] **Step 5: Run the tests and verify they pass**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.IpValidationTest" --tests "com.example.chargecontrol.SettingsRepositoryTest"`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.IpValidationTest" --tests "com.example.chargecontrol.SettingsRepositoryTest"`
 Expected: `BUILD SUCCESSFUL`, all 6 tests pass.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen
 git add app/src/main/java/com/example/chargecontrol/IpValidation.kt app/src/main/java/com/example/chargecontrol/KeyValueStore.kt app/src/main/java/com/example/chargecontrol/SettingsRepository.kt app/src/test/java/com/example/chargecontrol/IpValidationTest.kt app/src/test/java/com/example/chargecontrol/SettingsRepositoryTest.kt
 git commit -m "feat: add IPv4/port validation and SettingsRepository"
 ```
@@ -354,16 +354,16 @@ object Config {
 
 - [ ] **Step 4: Verify the project builds and existing tests still pass**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew assembleDebug`
 Expected: `BUILD SUCCESSFUL`.
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew testDebugUnitTest`
 Expected: `BUILD SUCCESSFUL`, all existing tests still pass (none of them reference `Config.EVCC_BASE_URL`/`GOE_BASE_URL` or `NetworkModule`, only `Config.LOADPOINT_ID`/`POLL_INTERVAL_MS`, which are unchanged).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen
 git add app/src/main/java/com/example/chargecontrol/network/NetworkModule.kt app/src/main/java/com/example/chargecontrol/Config.kt app/src/main/res/xml/network_security_config.xml
 git commit -m "feat: make evcc/go-e host and port dynamic via SettingsRepository"
 ```
@@ -377,10 +377,13 @@ git commit -m "feat: make evcc/go-e host and port dynamic via SettingsRepository
 - Modify: `app/build.gradle.kts` (add one dependency line)
 - Create: `app/src/main/java/com/example/chargecontrol/ui/SettingsScreen.kt`
 - Modify: `app/src/main/java/com/example/chargecontrol/ui/MainScreen.kt` (replace entire file)
+- Modify: `app/src/main/java/com/example/chargecontrol/MainActivity.kt` (one-line patch — see Step 4)
 
 **Interfaces:**
 - Consumes: `isValidIpv4`/`isValidPort`, `SettingsRepository` (Task 1).
 - Produces: `@Composable fun SettingsScreen(onBack: () -> Unit)`; `MainScreen` gains one new required parameter `onSettingsClick: () -> Unit` — both consumed by Task 4 (`MainActivity`).
+
+Note: `MainScreen` gaining a new required parameter breaks the existing `MainScreen(...)` call in `MainActivity.kt`, which this task does not otherwise touch. Step 4 makes the minimal one-line fix needed to keep the whole module compiling — Task 4 replaces this same file wholesale anyway (wiring the settings-screen navigation properly), so this is a throwaway patch, not a design decision.
 
 - [ ] **Step 1: Add the icons dependency**
 
@@ -791,16 +794,50 @@ private fun phasesLabel(phasesConfigured: Int): String = when (phasesConfigured)
 }
 ```
 
-- [ ] **Step 4: Verify the project builds**
+- [ ] **Step 4: Keep `MainActivity.kt` compiling**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
-Expected: `BUILD SUCCESSFUL`. (`MainActivity.kt`'s existing `MainScreen(...)` call site doesn't pass `onSettingsClick` yet, so this specific call won't compile until Task 4 — if `assembleDebug` fails ONLY on that missing-argument error at `MainActivity.kt`'s `MainScreen(...)` invocation, that's expected and fixed in Task 4. To confirm this task in isolation instead, run `./gradlew compileDebugKotlin -x :app:compileDebugKotlin` is not meaningful for a single module — instead, temporarily verify `SettingsScreen.kt` and the rest of `MainScreen.kt` compile by checking the error output names only `MainActivity.kt`'s call site, nothing else.)
+In `app/src/main/java/com/example/chargecontrol/MainActivity.kt`, find the existing `MainScreen(...)` call:
 
-- [ ] **Step 5: Commit**
+```kotlin
+    MainScreen(
+        uiState = uiState,
+        onModeSelected = viewModel::setMode,
+        onStop = { viewModel.setMode("off") },
+        onErrorShown = viewModel::errorShown,
+        onPhasesSelected = viewModel::setPhases,
+        onMinCurrentChanged = viewModel::setMinCurrent
+    )
+```
+
+Add one line to it:
+
+```kotlin
+    MainScreen(
+        uiState = uiState,
+        onModeSelected = viewModel::setMode,
+        onStop = { viewModel.setMode("off") },
+        onErrorShown = viewModel::errorShown,
+        onPhasesSelected = viewModel::setPhases,
+        onMinCurrentChanged = viewModel::setMinCurrent,
+        onSettingsClick = {}
+    )
+```
+
+Do not change anything else in this file — Task 4 replaces it wholesale with the real navigation wiring.
+
+- [ ] **Step 5: Verify the project builds and existing tests still pass**
+
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew assembleDebug`
+Expected: `BUILD SUCCESSFUL`.
+
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew testDebugUnitTest`
+Expected: `BUILD SUCCESSFUL`, full existing suite still passes.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
-git add gradle/libs.versions.toml app/build.gradle.kts app/src/main/java/com/example/chargecontrol/ui/SettingsScreen.kt app/src/main/java/com/example/chargecontrol/ui/MainScreen.kt
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen
+git add gradle/libs.versions.toml app/build.gradle.kts app/src/main/java/com/example/chargecontrol/ui/SettingsScreen.kt app/src/main/java/com/example/chargecontrol/ui/MainScreen.kt app/src/main/java/com/example/chargecontrol/MainActivity.kt
 git commit -m "feat: add SettingsScreen and MainScreen settings-gear entry point"
 ```
 
@@ -1002,16 +1039,16 @@ This drops in `SettingsRepository.init(context)` as the first statement, and add
 
 - [ ] **Step 2: Full build and test verification**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew assembleDebug`
 Expected: `BUILD SUCCESSFUL`.
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen && ./gradlew testDebugUnitTest`
 Expected: `BUILD SUCCESSFUL`, all tests (Task 1's new ones plus the full pre-existing suite) pass.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/settings-screen
 git add app/src/main/java/com/example/chargecontrol/MainActivity.kt
 git commit -m "feat: wire settings screen navigation and SettingsRepository init"
 ```
