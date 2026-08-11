@@ -41,7 +41,7 @@ class WallboxViewModelTest {
         offeredCurrent: Double = 0.0,
         connected: Boolean = false,
         charging: Boolean = false
-    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging)
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent = 6)
 
     private class FakeEvccApi(
         var state: EvccStateResponse,
@@ -60,6 +60,14 @@ class WallboxViewModelTest {
         override suspend fun setMode(id: Int, mode: String): Response<ResponseBody> {
             lastModeSet = mode
             return setModeResponse
+        }
+
+        override suspend fun setPhases(id: Int, phases: String): Response<ResponseBody> {
+            return Response.success(null)
+        }
+
+        override suspend fun setMinCurrent(id: Int, current: Int): Response<ResponseBody> {
+            return Response.success(null)
         }
     }
 

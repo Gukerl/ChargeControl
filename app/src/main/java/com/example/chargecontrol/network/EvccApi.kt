@@ -13,7 +13,8 @@ data class LoadpointDto(
     val phasesConfigured: Int,
     val offeredCurrent: Double,
     val connected: Boolean,
-    val charging: Boolean
+    val charging: Boolean,
+    val minCurrent: Int
 )
 
 @Serializable
@@ -27,4 +28,10 @@ interface EvccApi {
 
     @POST("loadpoints/{id}/mode/{mode}")
     suspend fun setMode(@Path("id") id: Int, @Path("mode") mode: String): Response<ResponseBody>
+
+    @POST("loadpoints/{id}/phases/{phases}")
+    suspend fun setPhases(@Path("id") id: Int, @Path("phases") phases: String): Response<ResponseBody>
+
+    @POST("loadpoints/{id}/mincurrent/{current}")
+    suspend fun setMinCurrent(@Path("id") id: Int, @Path("current") current: Int): Response<ResponseBody>
 }
