@@ -13,15 +13,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,6 +39,8 @@ fun MainScreen(
     onModeSelected: (String) -> Unit,
     onStop: () -> Unit,
     onErrorShown: () -> Unit,
+    onPhasesSelected: (Int) -> Unit,
+    onMinCurrentChanged: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -63,15 +71,21 @@ fun MainScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ModeButton("PV-Überschuss (minpv)", isActive = uiState.mode == "minpv") {
-                    onModeSelected("minpv")
-                }
-                ModeButton("Nur PV (pv)", isActive = uiState.mode == "pv") {
-                    onModeSelected("pv")
-                }
-                ModeButton("Sofortladen (now)", isActive = uiState.mode == "now") {
-                    onModeSelected("now")
-                }
+                SelectableButton(
+                    "PV-Überschuss (minpv)",
+                    isActive = uiState.mode == "minpv",
+                    modifier = Modifier.fillMaxWidth()
+                ) { onModeSelected("minpv") }
+                SelectableButton(
+                    "Nur PV (pv)",
+                    isActive = uiState.mode == "pv",
+                    modifier = Modifier.fillMaxWidth()
+                ) { onModeSelected("pv") }
+                SelectableButton(
+                    "Sofortladen (now)",
+                    isActive = uiState.mode == "now",
+                    modifier = Modifier.fillMaxWidth()
+                ) { onModeSelected("now") }
                 OutlinedButton(
                     onClick = onStop,
                     modifier = Modifier
@@ -81,6 +95,12 @@ fun MainScreen(
                     Text("Laden stoppen")
                 }
             }
+
+            AdvancedSettings(
+                uiState = uiState,
+                onPhasesSelected = onPhasesSelected,
+                onMinCurrentChanged = onMinCurrentChanged
+            )
         }
     }
 }
@@ -119,13 +139,81 @@ private fun StatusCard(uiState: UiState) {
 }
 
 @Composable
-private fun ModeButton(label: String, isActive: Boolean, onClick: () -> Unit) {
+private fun AdvancedSettings(
+    uiState: UiState,
+    onPhasesSelected: (Int) -> Unit,
+    onMinCurrentChanged: (Int) -> Unit
+) {
+    var unlocked by remember { mutableStateOf(false) }
+    // Deliberately re-synced from the live value whenever it changes (poll refresh,
+    // or the refetch after a successful change) rather than tracked as fully
+    // independent drag state — simplest correct behavior for this app's scope.
+    // A mid-drag jump is possible only if a poll lands during the ~1-2s a drag
+    // takes, which is rare enough at a 7s poll interval not to warrant more
+    // machinery (e.g. tracking isDragging separately) here.
+    var sliderValue by remember(uiState.minCurrent) { mutableStateOf(uiState.minCurrent) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Checkbox(checked = unlocked, onCheckedChange = { unlocked = it })
+            Text("Erweiterte Einstellungen entsperren")
+        }
+
+        Text("Phasen", style = MaterialTheme.typography.labelLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SelectableButton(
+                "Automatisch",
+                isActive = uiState.phasesConfigured == 0,
+                enabled = unlocked,
+                modifier = Modifier.weight(1f)
+            ) { onPhasesSelected(0) }
+            SelectableButton(
+                "1-phasig",
+                isActive = uiState.phasesConfigured == 1,
+                enabled = unlocked,
+                modifier = Modifier.weight(1f)
+            ) { onPhasesSelected(1) }
+            SelectableButton(
+                "3-phasig",
+                isActive = uiState.phasesConfigured == 3,
+                enabled = unlocked,
+                modifier = Modifier.weight(1f)
+            ) { onPhasesSelected(3) }
+        }
+
+        Text("Ladestrom: $sliderValue A", style = MaterialTheme.typography.labelLarge)
+        Slider(
+            value = sliderValue.toFloat(),
+            onValueChange = { sliderValue = it.roundToInt() },
+            onValueChangeFinished = { onMinCurrentChanged(sliderValue) },
+            valueRange = 6f..16f,
+            steps = 9,
+            enabled = unlocked
+        )
+    }
+}
+
+@Composable
+private fun SelectableButton(
+    label: String,
+    isActive: Boolean,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        enabled = !isActive
+        modifier = modifier.height(56.dp),
+        enabled = enabled && !isActive
     ) {
         Text(label)
     }
