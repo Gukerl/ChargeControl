@@ -1,5 +1,6 @@
 package com.example.chargecontrol.ui
 
+import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
 import com.example.chargecontrol.network.EvccStateResponse
 import com.example.chargecontrol.network.GoeApi
@@ -150,5 +151,75 @@ class WallboxViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertEquals(fetchesBeforeAdvance, evccApi.fetchCount)
+    }
+
+    @Test
+    fun `failed first fetchState leaves hasData false and stops loading`() = runTest {
+        val evccApi = FakeEvccApi(
+            state = EvccStateResponse(listOf(loadpoint())),
+            stateError = IOException("offline")
+        )
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(evccApi, goeApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(false, viewModel.uiState.value.hasData)
+        assertEquals(false, viewModel.uiState.value.isLoading)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `empty loadpoints list surfaces an error instead of hanging`() = runTest {
+        val evccApi = FakeEvccApi(state = EvccStateResponse(emptyList()))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(evccApi, goeApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(false, viewModel.uiState.value.isLoading)
+        assertEquals(
+            "Loadpoint ${Config.LOADPOINT_ID} nicht gefunden",
+            viewModel.uiState.value.errorMessage
+        )
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `unexpected exception during fetchState is caught, not propagated`() = runTest {
+        val evccApi = FakeEvccApi(
+            state = EvccStateResponse(listOf(loadpoint())),
+            stateError = IllegalStateException("bad json")
+        )
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(evccApi, goeApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(false, viewModel.uiState.value.isLoading)
+        assertEquals("Unerwartete Antwort von evcc", viewModel.uiState.value.errorMessage)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `poll loop fetches state again after the poll interval elapses`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(evccApi, goeApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+        dispatcher.scheduler.advanceTimeBy(Config.POLL_INTERVAL_MS + 1)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(2, evccApi.fetchCount)
+
+        viewModel.onStop()
     }
 }

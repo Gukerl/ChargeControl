@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
 import com.example.chargecontrol.network.GoeApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,8 @@ data class UiState(
     val connected: Boolean = false,
     val charging: Boolean = false,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val hasData: Boolean = false
 )
 
 class WallboxViewModel(
@@ -61,6 +63,10 @@ class WallboxViewModel(
                 }
             } catch (e: IOException) {
                 _uiState.update { it.copy(errorMessage = "evcc nicht erreichbar") }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Unerwartete Antwort von evcc") }
             }
             fetchState()
         }
@@ -78,13 +84,25 @@ class WallboxViewModel(
             }
         } catch (e: IOException) {
             _uiState.update { it.copy(errorMessage = "go-e Box nicht erreichbar") }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _uiState.update { it.copy(errorMessage = "Unerwartete Antwort von go-e Box") }
         }
     }
 
     private suspend fun fetchState() {
         try {
             val state = evccApi.getState()
-            val loadpoint = state.loadpoints.getOrNull(Config.LOADPOINT_ID - 1) ?: return
+            val loadpoint = state.loadpoints.getOrNull(Config.LOADPOINT_ID - 1) ?: run {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Loadpoint ${Config.LOADPOINT_ID} nicht gefunden"
+                    )
+                }
+                return
+            }
             _uiState.update {
                 it.copy(
                     mode = loadpoint.mode,
@@ -92,13 +110,18 @@ class WallboxViewModel(
                     offeredCurrent = loadpoint.offeredCurrent,
                     connected = loadpoint.connected,
                     charging = loadpoint.charging,
-                    isLoading = false
+                    isLoading = false,
+                    hasData = true
                 )
             }
         } catch (e: IOException) {
             _uiState.update { it.copy(isLoading = false, errorMessage = "evcc nicht erreichbar") }
         } catch (e: HttpException) {
             _uiState.update { it.copy(isLoading = false, errorMessage = "evcc-Fehler (${e.code()})") }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _uiState.update { it.copy(isLoading = false, errorMessage = "Unerwartete Antwort von evcc") }
         }
     }
 }

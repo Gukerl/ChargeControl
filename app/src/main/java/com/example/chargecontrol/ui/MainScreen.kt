@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,7 +52,8 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -97,6 +100,8 @@ private fun StatusCard(uiState: UiState) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp))
                     Text("Lade Status …")
                 }
+            } else if (!uiState.hasData) {
+                Text("Kein Status verfügbar")
             } else {
                 Text("Modus: ${uiState.mode}")
                 Text("Phasen: ${phasesLabel(uiState.phasesConfigured)}")
