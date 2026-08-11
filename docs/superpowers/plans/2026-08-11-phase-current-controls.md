@@ -25,10 +25,13 @@
 **Files:**
 - Modify: `app/src/main/java/com/example/chargecontrol/network/EvccApi.kt` (replace entire file)
 - Modify: `app/src/test/java/com/example/chargecontrol/network/EvccStateResponseTest.kt` (replace entire file — both existing payloads need a `minCurrent` field now that it's required on `LoadpointDto`)
+- Modify: `app/src/test/java/com/example/chargecontrol/ui/WallboxViewModelTest.kt` (one-line change only — see Step 3)
 
 **Interfaces:**
 - Consumes: nothing new.
 - Produces: `LoadpointDto` gains a required `minCurrent: Int` field; `EvccApi` gains `suspend fun setPhases(id: Int, phases: String): Response<ResponseBody>` and `suspend fun setMinCurrent(id: Int, current: Int): Response<ResponseBody>` — both consumed by Task 2.
+
+Note: `LoadpointDto` gaining a required 6th constructor parameter breaks the positional call in `WallboxViewModelTest.kt`'s `loadpoint()` helper, which this task does not otherwise touch. Step 3 makes the minimal one-line fix needed to keep the whole module compiling — Task 2 replaces this same file wholesale anyway (adding the `minCurrent` parameter properly, updating `FakeEvccApi`, adding new tests), so this is a throwaway patch, not a design decision.
 
 - [ ] **Step 1: Replace `EvccApi.kt`**
 
@@ -148,16 +151,38 @@ class EvccStateResponseTest {
 }
 ```
 
-- [ ] **Step 3: Run the test and verify it passes**
+- [ ] **Step 3: Keep `WallboxViewModelTest.kt` compiling**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.network.EvccStateResponseTest"`
-Expected: `BUILD SUCCESSFUL`, both tests pass. (This will also trigger recompilation of `WallboxViewModelTest.kt`, which does NOT compile yet at this point because `LoadpointDto` now requires a 6th constructor argument it doesn't pass — that failure is expected and fixed in Task 2, not this one. To confirm this task in isolation, ignore a `WallboxViewModelTest.kt` compile error here and only care that `EvccStateResponseTest` itself is correct; if you want a clean isolated run, temporarily verify with `./gradlew compileDebugKotlin` instead, which doesn't touch test sources.)
+In `app/src/test/java/com/example/chargecontrol/ui/WallboxViewModelTest.kt`, find the `loadpoint()` helper:
 
-- [ ] **Step 4: Commit**
+```kotlin
+    private fun loadpoint(
+        mode: String = "now",
+        phasesConfigured: Int = 0,
+        offeredCurrent: Double = 0.0,
+        connected: Boolean = false,
+        charging: Boolean = false
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging)
+```
+
+Replace only the final line with:
+
+```kotlin
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent = 6)
+```
+
+Do not change anything else in this file — Task 2 replaces it wholesale.
+
+- [ ] **Step 4: Run the tests and verify they pass**
+
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls && ./gradlew testDebugUnitTest`
+Expected: `BUILD SUCCESSFUL`, the full existing suite passes (the 2 `EvccStateResponseTest` tests plus all pre-existing `WallboxViewModelTest` tests), with no compile errors anywhere in the module.
+
+- [ ] **Step 5: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
-git add app/src/main/java/com/example/chargecontrol/network/EvccApi.kt app/src/test/java/com/example/chargecontrol/network/EvccStateResponseTest.kt
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls
+git add app/src/main/java/com/example/chargecontrol/network/EvccApi.kt app/src/test/java/com/example/chargecontrol/network/EvccStateResponseTest.kt app/src/test/java/com/example/chargecontrol/ui/WallboxViewModelTest.kt
 git commit -m "feat: add minCurrent field and phase/current evcc endpoints"
 ```
 
@@ -598,13 +623,13 @@ Note: no separate failure-path tests for `setPhases`/`setMinCurrent` — the err
 
 - [ ] **Step 3: Run the tests and verify they pass**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.ui.WallboxViewModelTest" --tests "com.example.chargecontrol.network.EvccStateResponseTest"`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.ui.WallboxViewModelTest" --tests "com.example.chargecontrol.network.EvccStateResponseTest"`
 Expected: `BUILD SUCCESSFUL`, all 10 `WallboxViewModelTest` tests and both `EvccStateResponseTest` tests pass. This also confirms Task 1's test compiles cleanly now that this task's `LoadpointDto` usage is consistent everywhere.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls
 git add app/src/main/java/com/example/chargecontrol/ui/WallboxViewModel.kt app/src/test/java/com/example/chargecontrol/ui/WallboxViewModelTest.kt
 git commit -m "feat: add setPhases/setMinCurrent, share update logic via performLoadpointUpdate"
 ```
@@ -885,16 +910,16 @@ No other change to `MainActivity.kt` is needed — the permission gate, lifecycl
 
 - [ ] **Step 3: Full build and test verification**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls && ./gradlew assembleDebug`
 Expected: `BUILD SUCCESSFUL`.
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls && ./gradlew testDebugUnitTest`
 Expected: `BUILD SUCCESSFUL`, all tests (Task 1, Task 2, and the pre-existing suite) pass.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/phase-current-controls
 git add app/src/main/java/com/example/chargecontrol/ui/MainScreen.kt app/src/main/java/com/example/chargecontrol/MainActivity.kt
 git commit -m "feat: add phase and min-current controls behind an unlock checkbox"
 ```
