@@ -71,6 +71,7 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-kotlinx-serialization-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitKotlinxSerializationConverter" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
@@ -84,7 +85,7 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ```
 
-Note: the `androidx-compose-material3-adaptive-navigation-suite` library entry is dropped — the app has a single screen and never used adaptive navigation.
+Note: `androidx-compose-material3-adaptive-navigation-suite` is kept for now even though the design drops the nav-suite UI — `MainActivity.kt` still uses it until Task 5 rewrites that file. Removing it here would break the build for Tasks 1-4. Task 5 removes this entry when it removes the last usage.
 
 - [ ] **Step 2: Replace `app/build.gradle.kts`**
 
@@ -131,6 +132,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -208,13 +210,13 @@ dependencies {
 
 - [ ] **Step 5: Verify the project still builds**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
-Expected: `BUILD SUCCESSFUL`. `MainActivity.kt` still references the now-removed `androidx.compose.material3.adaptive.navigation.suite` APIs at this point — if the build fails only on that file, that's expected and gets fixed in Task 5; confirm the failure is isolated to `MainActivity.kt`'s navigation-suite usage and nothing else.
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew assembleDebug`
+Expected: `BUILD SUCCESSFUL`. No source files changed in this task, only build config — the existing `MainActivity.kt` must still compile unmodified.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd ~/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung
 git add gradle/libs.versions.toml app/build.gradle.kts app/src/main/res/xml/network_security_config.xml app/src/main/AndroidManifest.xml
 git commit -m "build: add Retrofit/OkHttp/serialization deps, cleartext network security config"
 ```
@@ -417,13 +419,13 @@ class EvccStateResponseTest {
 
 - [ ] **Step 6: Run the test and verify it passes**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.network.EvccStateResponseTest"`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.network.EvccStateResponseTest"`
 Expected: `BUILD SUCCESSFUL`, both tests pass. (There's no prior failing state to observe here — the DTOs and the test are new together — so just confirm both tests pass on first run.)
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd ~/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung
 git add app/src/main/java/com/example/chargecontrol/Config.kt app/src/main/java/com/example/chargecontrol/network/ app/src/test/java/com/example/chargecontrol/network/
 git commit -m "feat: add evcc/go-e Retrofit interfaces and state DTOs"
 ```
@@ -712,13 +714,13 @@ class WallboxViewModelTest {
 
 - [ ] **Step 3: Run the tests and verify they pass**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.ui.WallboxViewModelTest"`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew testDebugUnitTest --tests "com.example.chargecontrol.ui.WallboxViewModelTest"`
 Expected: `BUILD SUCCESSFUL`, all 5 tests pass. If `Response.success(null)` or `Response.error(...)` don't compile as written, it's a Retrofit version-API mismatch — check the installed `retrofit` artifact's `Response` companion signatures and adjust the fake construction accordingly; the test intent (success vs. non-2xx response) must stay the same.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung
 git add app/src/main/java/com/example/chargecontrol/ui/WallboxViewModel.kt app/src/test/java/com/example/chargecontrol/ui/WallboxViewModelTest.kt
 git commit -m "feat: add WallboxViewModel with polling, mode changes, and error surfacing"
 ```
@@ -874,13 +876,13 @@ private fun phasesLabel(phasesConfigured: Int): String = when (phasesConfigured)
 
 - [ ] **Step 2: Verify it compiles**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew compileDebugKotlin`
-Expected: `BUILD SUCCESSFUL`. (`MainActivity.kt` still hasn't been rewritten, so it may still fail separately on the navigation-suite APIs — that's fine, fixed in Task 5. `MainScreen.kt` itself must compile cleanly.)
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew compileDebugKotlin`
+Expected: `BUILD SUCCESSFUL`. `MainActivity.kt` is untouched by this task and the navigation-suite dependency is still present (removed only in Task 5), so the whole module compiles cleanly including the new `MainScreen.kt`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung
 git add app/src/main/java/com/example/chargecontrol/ui/MainScreen.kt
 git commit -m "feat: add MainScreen composable with status card and mode buttons"
 ```
@@ -891,6 +893,8 @@ git commit -m "feat: add MainScreen composable with status card and mode buttons
 
 **Files:**
 - Modify: `app/src/main/java/com/example/chargecontrol/MainActivity.kt` (replace entire file)
+- Modify: `gradle/libs.versions.toml` (remove one line)
+- Modify: `app/build.gradle.kts` (remove one line)
 
 **Interfaces:**
 - Consumes: `NetworkModule.evccApi`, `NetworkModule.goeApi` (Task 2), `WallboxViewModel` (Task 3), `MainScreen` (Task 4).
@@ -967,19 +971,35 @@ fun ChargeControlApp() {
 
 This drops the wizard-generated `NavigationSuiteScaffold`/`AppDestinations`/`Greeting` template code entirely — none of it is used by this single-screen app.
 
-- [ ] **Step 2: Full build verification**
+- [ ] **Step 2: Remove the now-unused navigation-suite dependency**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
+`MainActivity.kt` no longer uses `NavigationSuiteScaffold`, so this is the only remaining reference to the nav-suite artifact — remove it from both files.
+
+In `gradle/libs.versions.toml`, delete this line from `[libraries]`:
+
+```toml
+androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
+```
+
+In `app/build.gradle.kts`, delete this line from `dependencies { ... }`:
+
+```kotlin
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
+```
+
+- [ ] **Step 3: Full build verification**
+
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew assembleDebug`
 Expected: `BUILD SUCCESSFUL`. If `viewModelFactory`/`initializer` fail to resolve from `androidx.lifecycle.viewmodel`, or `LocalLifecycleOwner`/`collectAsStateWithLifecycle` fail to resolve from `androidx.lifecycle.compose`, check the actually-resolved `androidx.lifecycle` artifact version's package layout (`./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep lifecycle`) and fix the import paths — the runtime behavior (start/stop polling tied to `ON_START`/`ON_STOP`, ViewModel constructed with the two API instances) must stay the same.
 
-- [ ] **Step 3: Run the full unit test suite**
+- [ ] **Step 4: Run the full unit test suite**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew testDebugUnitTest`
 Expected: `BUILD SUCCESSFUL`, all tests from Task 2 and Task 3 still pass.
 
-- [ ] **Step 4: Install and manually verify on a device on the home WLAN**
+- [ ] **Step 5: Install and manually verify on a device on the home WLAN**
 
-Run: `cd ~/AndroidStudioProjects/ChargeControl && ./gradlew installDebug` (with a device/emulator connected via `adb devices`, on the same WLAN as evcc/go-e for the live checks below).
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung && ./gradlew installDebug` (with a device/emulator connected via `adb devices`, on the same WLAN as evcc/go-e for the live checks below).
 
 Manual checklist against the spec's acceptance criteria:
 - App launch shows a short loading state, then Modus/Phasen/Ladestrom populate within ~1s (confirms `frc=0` + initial `getState()` both fired on start).
@@ -990,10 +1010,10 @@ Manual checklist against the spec's acceptance criteria:
 - Toggle system dark mode: the app follows it immediately (already handled by the existing `ChargeControlTheme`, just confirm no regression).
 - Put the app in the background (home button) and check `adb shell dumpsys activity <package>`-level behavior or simply reason from logs/breakpoints that no further network calls happen while backgrounded, then bring it back to the foreground and confirm polling resumes.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-cd ~/AndroidStudioProjects/ChargeControl
-git add app/src/main/java/com/example/chargecontrol/MainActivity.kt
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/wallbox-steuerung
+git add app/src/main/java/com/example/chargecontrol/MainActivity.kt gradle/libs.versions.toml app/build.gradle.kts
 git commit -m "feat: wire MainActivity to WallboxViewModel and MainScreen, drop template nav scaffold"
 ```
