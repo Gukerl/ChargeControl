@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,9 +40,9 @@ import com.example.chargecontrol.isValidPort
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
-    var evccHost by remember { mutableStateOf(SettingsRepository.evccHost) }
-    var evccPort by remember { mutableStateOf(SettingsRepository.evccPort.toString()) }
-    var goeHost by remember { mutableStateOf(SettingsRepository.goeHost) }
+    var evccHost by rememberSaveable { mutableStateOf(SettingsRepository.evccHost) }
+    var evccPort by rememberSaveable { mutableStateOf(SettingsRepository.evccPort.toString()) }
+    var goeHost by rememberSaveable { mutableStateOf(SettingsRepository.goeHost) }
 
     val evccHostValid = isValidIpv4(evccHost)
     val evccPortValid = isValidPort(evccPort)
@@ -73,14 +75,15 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .imePadding(),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("evcc", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = evccHost,
-                    onValueChange = { evccHost = it },
+                    onValueChange = { evccHost = it.trim() },
                     label = { Text("IP-Adresse") },
                     isError = !evccHostValid,
                     supportingText = { if (!evccHostValid) Text("Ungültige IPv4-Adresse") },
@@ -88,7 +91,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
                 OutlinedTextField(
                     value = evccPort,
-                    onValueChange = { evccPort = it },
+                    onValueChange = { evccPort = it.trim() },
                     label = { Text("Port") },
                     isError = !evccPortValid,
                     supportingText = { if (!evccPortValid) Text("Port muss zwischen 1 und 65535 liegen") },
@@ -101,7 +104,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text("go-e Wallbox", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = goeHost,
-                    onValueChange = { goeHost = it },
+                    onValueChange = { goeHost = it.trim() },
                     label = { Text("IP-Adresse") },
                     isError = !goeHostValid,
                     supportingText = { if (!goeHostValid) Text("Ungültige IPv4-Adresse") },

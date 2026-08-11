@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,11 +48,10 @@ import com.example.chargecontrol.ui.theme.ChargeControlTheme
 
 private const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
-private enum class Screen { Main, Settings }
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SettingsRepository.init(this)
         enableEdgeToEdge()
         setContent {
             ChargeControlTheme {
@@ -67,8 +68,6 @@ private fun hasLocalNetworkPermission(context: android.content.Context): Boolean
 fun ChargeControlApp() {
     val context = LocalContext.current
     val activity = context as Activity
-
-    SettingsRepository.init(context)
 
     var hasPermission by remember { mutableStateOf(hasLocalNetworkPermission(context)) }
     var permissionRequestedOnce by remember { mutableStateOf(false) }
@@ -103,13 +102,6 @@ fun ChargeControlApp() {
         return
     }
 
-    var currentScreen by remember { mutableStateOf(Screen.Main) }
-
-    if (currentScreen == Screen.Settings) {
-        SettingsScreen(onBack = { currentScreen = Screen.Main })
-        return
-    }
-
     val viewModel: WallboxViewModel = viewModel(
         factory = viewModelFactory {
             initializer { WallboxViewModel(NetworkModule.evccApi, NetworkModule.goeApi) }
@@ -136,15 +128,25 @@ fun ChargeControlApp() {
         }
     }
 
-    MainScreen(
-        uiState = uiState,
-        onModeSelected = viewModel::setMode,
-        onStop = { viewModel.setMode("off") },
-        onErrorShown = viewModel::errorShown,
-        onPhasesSelected = viewModel::setPhases,
-        onMinCurrentChanged = viewModel::setMinCurrent,
-        onSettingsClick = { currentScreen = Screen.Settings }
-    )
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+
+    if (showSettings) {
+        BackHandler { showSettings = false }
+        SettingsScreen(onBack = { showSettings = false })
+    } else {
+        MainScreen(
+            uiState = uiState,
+            onModeSelected = viewModel::setMode,
+            onStop = { viewModel.setMode("off") },
+            onErrorShown = viewModel::errorShown,
+            onPhasesSelected = viewModel::setPhases,
+            onMinCurrentChanged = viewModel::setMinCurrent,
+            onSettingsClick = {
+                viewModel.errorShown()
+                showSettings = true
+            }
+        )
+    }
 }
 
 @Composable

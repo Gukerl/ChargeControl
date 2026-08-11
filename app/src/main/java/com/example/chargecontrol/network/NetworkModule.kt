@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 private const val PLACEHOLDER_EVCC_BASE_URL = "http://chargecontrol.invalid:7070/api/"
 private const val PLACEHOLDER_GOE_BASE_URL = "http://chargecontrol.invalid/"
 
-private class DynamicHostInterceptor(
+internal class DynamicHostInterceptor(
     private val hostProvider: () -> String,
     private val portProvider: () -> Int
 ) : Interceptor {

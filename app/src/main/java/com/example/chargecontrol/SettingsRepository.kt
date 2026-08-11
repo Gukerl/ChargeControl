@@ -11,6 +11,7 @@ object SettingsRepository {
     private const val KEY_EVCC_PORT = "evcc_port"
     private const val KEY_GOE_HOST = "goe_host"
 
+    @Volatile
     private lateinit var store: KeyValueStore
 
     fun init(context: Context) {

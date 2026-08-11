@@ -38,4 +38,11 @@ class SettingsRepositoryTest {
         assertEquals(8080, SettingsRepository.evccPort)
         assertEquals("10.0.0.6", SettingsRepository.goeHost)
     }
+
+    @Test
+    fun `defaults match the previously-hardcoded values`() {
+        assertEquals("192.168.224.24", SettingsRepository.evccHost)
+        assertEquals(7070, SettingsRepository.evccPort)
+        assertEquals("192.168.224.245", SettingsRepository.goeHost)
+    }
 }
