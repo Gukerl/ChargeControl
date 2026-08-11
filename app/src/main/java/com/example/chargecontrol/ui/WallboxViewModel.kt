@@ -14,13 +14,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody
 import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 
 data class UiState(
     val mode: String = "",
     val phasesConfigured: Int = 0,
     val offeredCurrent: Double = 0.0,
+    val minCurrent: Int = 6,
     val connected: Boolean = false,
     val charging: Boolean = false,
     val isLoading: Boolean = true,
@@ -54,10 +57,26 @@ class WallboxViewModel(
         pollingJob = null
     }
 
-    fun setMode(mode: String) {
+    fun setMode(mode: String) = performLoadpointUpdate {
+        evccApi.setMode(Config.LOADPOINT_ID, mode)
+    }
+
+    fun setPhases(phases: Int) = performLoadpointUpdate {
+        evccApi.setPhases(Config.LOADPOINT_ID, phases.toString())
+    }
+
+    fun setMinCurrent(current: Int) = performLoadpointUpdate {
+        evccApi.setMinCurrent(Config.LOADPOINT_ID, current)
+    }
+
+    fun errorShown() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    private fun performLoadpointUpdate(action: suspend () -> Response<ResponseBody>) {
         viewModelScope.launch {
             try {
-                val response = evccApi.setMode(Config.LOADPOINT_ID, mode)
+                val response = action()
                 if (!response.isSuccessful) {
                     _uiState.update { it.copy(errorMessage = "evcc-Fehler (${response.code()})") }
                 }
@@ -70,10 +89,6 @@ class WallboxViewModel(
             }
             fetchState()
         }
-    }
-
-    fun errorShown() {
-        _uiState.update { it.copy(errorMessage = null) }
     }
 
     private suspend fun releaseWallbox() {
@@ -108,6 +123,7 @@ class WallboxViewModel(
                     mode = loadpoint.mode,
                     phasesConfigured = loadpoint.phasesConfigured,
                     offeredCurrent = loadpoint.offeredCurrent,
+                    minCurrent = loadpoint.minCurrent,
                     connected = loadpoint.connected,
                     charging = loadpoint.charging,
                     isLoading = false,

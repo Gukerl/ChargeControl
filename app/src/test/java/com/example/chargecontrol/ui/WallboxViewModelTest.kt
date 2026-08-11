@@ -40,15 +40,20 @@ class WallboxViewModelTest {
         phasesConfigured: Int = 0,
         offeredCurrent: Double = 0.0,
         connected: Boolean = false,
-        charging: Boolean = false
-    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent = 6)
+        charging: Boolean = false,
+        minCurrent: Int = 6
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent)
 
     private class FakeEvccApi(
         var state: EvccStateResponse,
         var stateError: Throwable? = null,
-        var setModeResponse: Response<ResponseBody> = Response.success(null)
+        var setModeResponse: Response<ResponseBody> = Response.success(null),
+        var setPhasesResponse: Response<ResponseBody> = Response.success(null),
+        var setMinCurrentResponse: Response<ResponseBody> = Response.success(null)
     ) : EvccApi {
         var lastModeSet: String? = null
+        var lastPhasesSet: String? = null
+        var lastMinCurrentSet: Int? = null
         var fetchCount = 0
 
         override suspend fun getState(): EvccStateResponse {
@@ -63,11 +68,13 @@ class WallboxViewModelTest {
         }
 
         override suspend fun setPhases(id: Int, phases: String): Response<ResponseBody> {
-            return Response.success(null)
+            lastPhasesSet = phases
+            return setPhasesResponse
         }
 
         override suspend fun setMinCurrent(id: Int, current: Int): Response<ResponseBody> {
-            return Response.success(null)
+            lastMinCurrentSet = current
+            return setMinCurrentResponse
         }
     }
 
@@ -229,5 +236,31 @@ class WallboxViewModelTest {
         assertEquals(2, evccApi.fetchCount)
 
         viewModel.onStop()
+    }
+
+    @Test
+    fun `setPhases posts the new phase mode and refreshes state`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(phasesConfigured = 3))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(evccApi, goeApi)
+
+        viewModel.setPhases(3)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("3", evccApi.lastPhasesSet)
+        assertEquals(3, viewModel.uiState.value.phasesConfigured)
+    }
+
+    @Test
+    fun `setMinCurrent posts the new current and refreshes state`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(minCurrent = 10))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(evccApi, goeApi)
+
+        viewModel.setMinCurrent(10)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(10, evccApi.lastMinCurrentSet)
+        assertEquals(10, viewModel.uiState.value.minCurrent)
     }
 }
