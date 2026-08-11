@@ -1,0 +1,68 @@
+package com.example.chargecontrol.network
+
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Test
+
+class EvccStateResponseTest {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    @Test
+    fun `parses loadpoint fields from a real evcc state payload`() {
+        val payload = """
+            {
+              "loadpoints": [
+                {
+                  "mode": "pv",
+                  "phasesConfigured": 3,
+                  "offeredCurrent": 9.5,
+                  "connected": true,
+                  "charging": true,
+                  "title": "go-e Box",
+                  "chargePower": 2185
+                }
+              ],
+              "version": "0.313.2",
+              "siteTitle": "Zuhause"
+            }
+        """.trimIndent()
+
+        val result = json.decodeFromString<EvccStateResponse>(payload)
+
+        val loadpoint = result.loadpoints.single()
+        assertEquals("pv", loadpoint.mode)
+        assertEquals(3, loadpoint.phasesConfigured)
+        assertEquals(9.5, loadpoint.offeredCurrent, 0.0)
+        assertEquals(true, loadpoint.connected)
+        assertEquals(true, loadpoint.charging)
+    }
+
+    @Test
+    fun `ignores unknown top-level and nested fields`() {
+        val payload = """
+            {
+              "loadpoints": [
+                {
+                  "mode": "off",
+                  "phasesConfigured": 0,
+                  "offeredCurrent": 0.0,
+                  "connected": false,
+                  "charging": false,
+                  "chargeVoltages": [227.2, 233.4, 234.9],
+                  "vehicleTitle": "BYDSurf"
+                }
+              ],
+              "battery": [],
+              "pv": []
+            }
+        """.trimIndent()
+
+        val result = json.decodeFromString<EvccStateResponse>(payload)
+
+        assertEquals("off", result.loadpoints.single().mode)
+        assertFalse(result.loadpoints.single().connected)
+    }
+}
