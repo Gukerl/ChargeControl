@@ -130,7 +130,8 @@ fun ChargeControlApp() {
         onStop = { viewModel.setMode("off") },
         onErrorShown = viewModel::errorShown,
         onPhasesSelected = viewModel::setPhases,
-        onMinCurrentChanged = viewModel::setMinCurrent
+        onMinCurrentChanged = viewModel::setMinCurrent,
+        onSettingsClick = {}
     )
 }
 
