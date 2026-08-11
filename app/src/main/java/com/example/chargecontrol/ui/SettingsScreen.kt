@@ -86,7 +86,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     onValueChange = { evccHost = it.trim() },
                     label = { Text("IP-Adresse") },
                     isError = !evccHostValid,
-                    supportingText = { if (!evccHostValid) Text("Ungültige IPv4-Adresse") },
+                    supportingText = { if (!evccHostValid) Text("Ungültige oder keine private IPv4-Adresse (10.x, 172.16-31.x, 192.168.x)") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -107,7 +107,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     onValueChange = { goeHost = it.trim() },
                     label = { Text("IP-Adresse") },
                     isError = !goeHostValid,
-                    supportingText = { if (!goeHostValid) Text("Ungültige IPv4-Adresse") },
+                    supportingText = { if (!goeHostValid) Text("Ungültige oder keine private IPv4-Adresse (10.x, 172.16-31.x, 192.168.x)") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
