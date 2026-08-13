@@ -89,6 +89,9 @@ class WallboxViewModelTest {
         assertEquals(9.5, viewModel.uiState.value.offeredCurrent, 0.0)
         assertEquals(false, viewModel.uiState.value.isLoading)
         assertEquals(1, evccApi.fetchCount)
+        assertEquals(null, evccApi.lastModeSet)
+        assertEquals(null, evccApi.lastPhasesSet)
+        assertEquals(null, evccApi.lastMinCurrentSet)
 
         viewModel.onStop()
     }
