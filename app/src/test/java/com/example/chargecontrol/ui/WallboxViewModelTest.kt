@@ -3,7 +3,6 @@ package com.example.chargecontrol.ui
 import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
 import com.example.chargecontrol.network.EvccStateResponse
-import com.example.chargecontrol.network.GoeApi
 import com.example.chargecontrol.network.LoadpointDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -78,30 +77,18 @@ class WallboxViewModelTest {
         }
     }
 
-    private class FakeGoeApi(
-        var releaseResponse: Response<ResponseBody> = Response.success(null)
-    ) : GoeApi {
-        var releaseCalled = false
-
-        override suspend fun release(frc: Int): Response<ResponseBody> {
-            releaseCalled = true
-            return releaseResponse
-        }
-    }
-
     @Test
-    fun `onStart releases the wallbox and loads initial state`() = runTest {
+    fun `onStart loads initial state without sending any control command`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "pv", offeredCurrent = 9.5))))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
 
-        assertEquals(true, goeApi.releaseCalled)
         assertEquals("pv", viewModel.uiState.value.mode)
         assertEquals(9.5, viewModel.uiState.value.offeredCurrent, 0.0)
         assertEquals(false, viewModel.uiState.value.isLoading)
+        assertEquals(1, evccApi.fetchCount)
 
         viewModel.onStop()
     }
@@ -112,8 +99,7 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint(mode = "now"))),
             stateError = IOException("offline")
         )
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -126,8 +112,7 @@ class WallboxViewModelTest {
     @Test
     fun `setMode posts the new mode and refreshes state`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "minpv"))))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.setMode("minpv")
         dispatcher.scheduler.runCurrent()
@@ -142,8 +127,7 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint(mode = "now"))),
             setModeResponse = Response.error(500, "".toResponseBody(null))
         )
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.setMode("now")
         dispatcher.scheduler.runCurrent()
@@ -155,8 +139,7 @@ class WallboxViewModelTest {
     @Test
     fun `onStop cancels polling so no further state fetches happen`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -175,8 +158,7 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint())),
             stateError = IOException("offline")
         )
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -190,8 +172,7 @@ class WallboxViewModelTest {
     @Test
     fun `empty loadpoints list surfaces an error instead of hanging`() = runTest {
         val evccApi = FakeEvccApi(state = EvccStateResponse(emptyList()))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -211,8 +192,7 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint())),
             stateError = IllegalStateException("bad json")
         )
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -226,8 +206,7 @@ class WallboxViewModelTest {
     @Test
     fun `poll loop fetches state again after the poll interval elapses`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -242,8 +221,7 @@ class WallboxViewModelTest {
     @Test
     fun `setPhases posts the new phase mode and refreshes state`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(phasesConfigured = 3))))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.setPhases(3)
         dispatcher.scheduler.runCurrent()
@@ -255,8 +233,7 @@ class WallboxViewModelTest {
     @Test
     fun `setMinCurrent posts the new current and refreshes state`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(minCurrent = 10.0))))
-        val goeApi = FakeGoeApi()
-        val viewModel = WallboxViewModel(evccApi, goeApi)
+        val viewModel = WallboxViewModel(evccApi)
 
         viewModel.setMinCurrent(10)
         dispatcher.scheduler.runCurrent()

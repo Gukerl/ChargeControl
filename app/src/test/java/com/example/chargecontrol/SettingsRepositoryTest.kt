@@ -25,24 +25,20 @@ class SettingsRepositoryTest {
     fun `returns defaults when nothing has been saved`() {
         assertEquals(SettingsRepository.DEFAULT_EVCC_HOST, SettingsRepository.evccHost)
         assertEquals(SettingsRepository.DEFAULT_EVCC_PORT, SettingsRepository.evccPort)
-        assertEquals(SettingsRepository.DEFAULT_GOE_HOST, SettingsRepository.goeHost)
     }
 
     @Test
     fun `persists and returns saved values`() {
         SettingsRepository.evccHost = "10.0.0.5"
         SettingsRepository.evccPort = 8080
-        SettingsRepository.goeHost = "10.0.0.6"
 
         assertEquals("10.0.0.5", SettingsRepository.evccHost)
         assertEquals(8080, SettingsRepository.evccPort)
-        assertEquals("10.0.0.6", SettingsRepository.goeHost)
     }
 
     @Test
     fun `defaults match the previously-hardcoded values`() {
         assertEquals("192.168.224.24", SettingsRepository.evccHost)
         assertEquals(7070, SettingsRepository.evccPort)
-        assertEquals("192.168.224.245", SettingsRepository.goeHost)
     }
 }

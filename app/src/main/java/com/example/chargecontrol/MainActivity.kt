@@ -104,7 +104,7 @@ fun ChargeControlApp() {
 
     val viewModel: WallboxViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { WallboxViewModel(NetworkModule.evccApi, NetworkModule.goeApi) }
+            initializer { WallboxViewModel(NetworkModule.evccApi) }
         }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

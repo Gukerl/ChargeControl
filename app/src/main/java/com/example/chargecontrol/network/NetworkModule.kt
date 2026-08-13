@@ -12,7 +12,6 @@ import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
 private const val PLACEHOLDER_EVCC_BASE_URL = "http://chargecontrol.invalid:7070/api/"
-private const val PLACEHOLDER_GOE_BASE_URL = "http://chargecontrol.invalid/"
 
 internal class DynamicHostInterceptor(
     private val hostProvider: () -> String,
@@ -45,15 +44,6 @@ object NetworkModule {
         )
         .build()
 
-    private val goeOkHttpClient = baseClientBuilder()
-        .addInterceptor(
-            DynamicHostInterceptor(
-                hostProvider = { SettingsRepository.goeHost },
-                portProvider = { 80 }
-            )
-        )
-        .build()
-
     val evccApi: EvccApi by lazy {
         Retrofit.Builder()
             .baseUrl(PLACEHOLDER_EVCC_BASE_URL)
@@ -61,14 +51,5 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(EvccApi::class.java)
-    }
-
-    val goeApi: GoeApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(PLACEHOLDER_GOE_BASE_URL)
-            .client(goeOkHttpClient)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-            .create(GoeApi::class.java)
     }
 }

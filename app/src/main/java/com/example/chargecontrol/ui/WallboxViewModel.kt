@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
-import com.example.chargecontrol.network.GoeApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -33,8 +32,7 @@ data class UiState(
 )
 
 class WallboxViewModel(
-    private val evccApi: EvccApi,
-    private val goeApi: GoeApi
+    private val evccApi: EvccApi
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -45,7 +43,6 @@ class WallboxViewModel(
     fun onStart() {
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
-            releaseWallbox()
             while (isActive) {
                 fetchState()
                 delay(Config.POLL_INTERVAL_MS)
@@ -89,21 +86,6 @@ class WallboxViewModel(
                 _uiState.update { it.copy(errorMessage = "Unerwartete Antwort von evcc") }
             }
             fetchState()
-        }
-    }
-
-    private suspend fun releaseWallbox() {
-        try {
-            val response = goeApi.release(frc = 0)
-            if (!response.isSuccessful) {
-                _uiState.update { it.copy(errorMessage = "go-e Box-Fehler (${response.code()})") }
-            }
-        } catch (e: IOException) {
-            _uiState.update { it.copy(errorMessage = "go-e Box nicht erreichbar") }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            _uiState.update { it.copy(errorMessage = "Unerwartete Antwort von go-e Box") }
         }
     }
 

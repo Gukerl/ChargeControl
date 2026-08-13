@@ -42,12 +42,10 @@ import com.example.chargecontrol.isValidPort
 fun SettingsScreen(onBack: () -> Unit) {
     var evccHost by rememberSaveable { mutableStateOf(SettingsRepository.evccHost) }
     var evccPort by rememberSaveable { mutableStateOf(SettingsRepository.evccPort.toString()) }
-    var goeHost by rememberSaveable { mutableStateOf(SettingsRepository.goeHost) }
 
     val evccHostValid = isValidIpv4(evccHost)
     val evccPortValid = isValidPort(evccPort)
-    val goeHostValid = isValidIpv4(goeHost)
-    val canSave = evccHostValid && evccPortValid && goeHostValid
+    val canSave = evccHostValid && evccPortValid
 
     val context = LocalContext.current
     val appVersion = remember {
@@ -100,23 +98,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("go-e Wallbox", style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(
-                    value = goeHost,
-                    onValueChange = { goeHost = it.trim() },
-                    label = { Text("IP-Adresse") },
-                    isError = !goeHostValid,
-                    supportingText = { if (!goeHostValid) Text("Ungültige oder keine private IPv4-Adresse (10.x, 172.16-31.x, 192.168.x)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
             Button(
                 onClick = {
                     SettingsRepository.evccHost = evccHost
                     SettingsRepository.evccPort = evccPort.toInt()
-                    SettingsRepository.goeHost = goeHost
                     onBack()
                 },
                 enabled = canSave,
