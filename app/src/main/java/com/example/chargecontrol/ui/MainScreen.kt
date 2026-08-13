@@ -104,12 +104,12 @@ fun MainScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 HoldToConfirmButton(
-                    "PV-Überschuss (minpv)",
+                    "kW min + Überschuss (minpv)",
                     isActive = uiState.mode == "minpv",
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("minpv") }
                 HoldToConfirmButton(
-                    "Nur PV (pv)",
+                    "nur PV-Überschuss",
                     isActive = uiState.mode == "pv",
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("pv") }
@@ -153,7 +153,7 @@ private fun StatusCard(uiState: UiState) {
             } else if (!uiState.hasData) {
                 Text("Kein Status verfügbar")
             } else {
-                Text("Modus: ${uiState.mode}")
+                Text("Modus: ${modeLabel(uiState.mode)}")
                 Text("Phasen: ${phasesLabel(uiState.phasesConfigured)}")
                 Text("Ladestrom: ${uiState.offeredCurrent.roundToInt()} A - ${activePhasesLabel(uiState.phasesActive)}")
                 Text("Fahrzeug verbunden: ${if (uiState.connected) "Ja" else "Nein"}")
@@ -328,6 +328,14 @@ private fun SelectableButton(
     ) {
         Text(label)
     }
+}
+
+private fun modeLabel(mode: String): String = when (mode) {
+    "minpv" -> "kW min + Überschuss (minpv)"
+    "pv" -> "nur PV-Überschuss"
+    "now" -> "Sofortladen (now)"
+    "off" -> "Aus"
+    else -> mode
 }
 
 private fun phasesLabel(phasesConfigured: Int): String = when (phasesConfigured) {
