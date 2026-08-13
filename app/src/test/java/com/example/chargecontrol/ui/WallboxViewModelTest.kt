@@ -40,8 +40,9 @@ class WallboxViewModelTest {
         offeredCurrent: Double = 0.0,
         connected: Boolean = false,
         charging: Boolean = false,
-        minCurrent: Double = 6.0
-    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent)
+        minCurrent: Double = 6.0,
+        vehicleSoc: Double = 0.0
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent, vehicleSoc)
 
     private class FakeEvccApi(
         var state: EvccStateResponse,
@@ -243,5 +244,18 @@ class WallboxViewModelTest {
 
         assertEquals(10, evccApi.lastMinCurrentSet)
         assertEquals(10, viewModel.uiState.value.minCurrent)
+    }
+
+    @Test
+    fun `fetchState populates vehicleSoc rounded to the nearest percent`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(vehicleSoc = 82.6))))
+        val viewModel = WallboxViewModel(evccApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(83, viewModel.uiState.value.vehicleSoc)
+
+        viewModel.onStop()
     }
 }

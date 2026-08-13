@@ -22,6 +22,7 @@ class EvccStateResponseTest {
                   "connected": true,
                   "charging": true,
                   "minCurrent": 6,
+                  "vehicleSoc": 82,
                   "title": "go-e Box",
                   "chargePower": 2185
                 }
@@ -40,6 +41,7 @@ class EvccStateResponseTest {
         assertEquals(true, loadpoint.connected)
         assertEquals(true, loadpoint.charging)
         assertEquals(6.0, loadpoint.minCurrent, 0.0)
+        assertEquals(82.0, loadpoint.vehicleSoc, 0.0)
     }
 
     @Test
@@ -54,6 +56,7 @@ class EvccStateResponseTest {
                   "connected": false,
                   "charging": false,
                   "minCurrent": 6,
+                  "vehicleSoc": 0,
                   "chargeVoltages": [227.2, 233.4, 234.9],
                   "vehicleTitle": "BYDSurf"
                 }
