@@ -26,6 +26,7 @@ data class UiState(
     val minCurrent: Int = 6,
     val connected: Boolean = false,
     val charging: Boolean = false,
+    val phasesActive: Int = 0,
     val vehicleSoc: Int = 0,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
@@ -110,6 +111,7 @@ class WallboxViewModel(
                     minCurrent = loadpoint.minCurrent.roundToInt(),
                     connected = loadpoint.connected,
                     charging = loadpoint.charging,
+                    phasesActive = loadpoint.phasesActive,
                     vehicleSoc = loadpoint.vehicleSoc?.roundToInt() ?: 0,
                     isLoading = false,
                     hasData = true

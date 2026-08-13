@@ -41,8 +41,9 @@ class WallboxViewModelTest {
         connected: Boolean = false,
         charging: Boolean = false,
         minCurrent: Double = 6.0,
+        phasesActive: Int = 0,
         vehicleSoc: Double? = 0.0
-    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent, vehicleSoc)
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent, phasesActive, vehicleSoc)
 
     private class FakeEvccApi(
         var state: EvccStateResponse,
@@ -269,6 +270,19 @@ class WallboxViewModelTest {
 
         assertEquals(true, viewModel.uiState.value.hasData)
         assertEquals(0, viewModel.uiState.value.vehicleSoc)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState populates phasesActive`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(phasesActive = 1))))
+        val viewModel = WallboxViewModel(evccApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(1, viewModel.uiState.value.phasesActive)
 
         viewModel.onStop()
     }

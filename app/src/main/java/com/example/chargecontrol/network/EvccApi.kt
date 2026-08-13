@@ -15,6 +15,7 @@ data class LoadpointDto(
     val connected: Boolean,
     val charging: Boolean,
     val minCurrent: Double,
+    val phasesActive: Int,
     val vehicleSoc: Double? = null
 )
 
