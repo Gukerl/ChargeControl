@@ -145,8 +145,7 @@ private fun StatusCard(uiState: UiState) {
             } else {
                 Text("Modus: ${uiState.mode}")
                 Text("Phasen: ${phasesLabel(uiState.phasesConfigured)}")
-                Text("Ladestrom: ${uiState.offeredCurrent.roundToInt()} A")
-                Text("Aktive Phasen: ${activePhasesLabel(uiState.phasesActive)}")
+                Text("Ladestrom: ${uiState.offeredCurrent.roundToInt()} A - ${activePhasesLabel(uiState.phasesActive)}")
                 Text("Fahrzeug verbunden: ${if (uiState.connected) "Ja" else "Nein"}")
                 if (uiState.connected) {
                     Text("Ladestand: ${uiState.vehicleSoc} %")
