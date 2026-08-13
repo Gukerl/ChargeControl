@@ -184,43 +184,41 @@ private fun AdvancedSettings(
             Text("Erweiterte Einstellungen entsperren")
         }
 
-        Text("Phasen", style = MaterialTheme.typography.labelLarge)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SelectableButton(
-                "Automatisch",
-                isActive = uiState.phasesConfigured == 0,
-                enabled = unlocked,
-                modifier = Modifier.weight(1f)
-            ) { onPhasesSelected(0) }
-            SelectableButton(
-                "1-phasig",
-                isActive = uiState.phasesConfigured == 1,
-                enabled = unlocked,
-                modifier = Modifier.weight(1f)
-            ) { onPhasesSelected(1) }
-            SelectableButton(
-                "3-phasig",
-                isActive = uiState.phasesConfigured == 3,
-                enabled = unlocked,
-                modifier = Modifier.weight(1f)
-            ) { onPhasesSelected(3) }
-        }
+        if (unlocked) {
+            Text("Phasen", style = MaterialTheme.typography.labelLarge)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SelectableButton(
+                    "Automatisch",
+                    isActive = uiState.phasesConfigured == 0,
+                    modifier = Modifier.weight(1f)
+                ) { onPhasesSelected(0) }
+                SelectableButton(
+                    "1-phasig",
+                    isActive = uiState.phasesConfigured == 1,
+                    modifier = Modifier.weight(1f)
+                ) { onPhasesSelected(1) }
+                SelectableButton(
+                    "3-phasig",
+                    isActive = uiState.phasesConfigured == 3,
+                    modifier = Modifier.weight(1f)
+                ) { onPhasesSelected(3) }
+            }
 
-        Text("Mindest-Ladestrom: $sliderValue A", style = MaterialTheme.typography.labelLarge)
-        Slider(
-            value = sliderValue.toFloat(),
-            onValueChange = { pending = it.roundToInt() },
-            onValueChangeFinished = {
-                pending?.let(onMinCurrentChanged)
-                pending = null
-            },
-            valueRange = 6f..16f,
-            steps = 9,
-            enabled = unlocked
-        )
+            Text("Mindest-Ladestrom: $sliderValue A", style = MaterialTheme.typography.labelLarge)
+            Slider(
+                value = sliderValue.toFloat(),
+                onValueChange = { pending = it.roundToInt() },
+                onValueChangeFinished = {
+                    pending?.let(onMinCurrentChanged)
+                    pending = null
+                },
+                valueRange = 6f..16f,
+                steps = 9
+            )
+        }
     }
 }
 
