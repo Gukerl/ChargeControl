@@ -110,7 +110,7 @@ class WallboxViewModel(
                     minCurrent = loadpoint.minCurrent.roundToInt(),
                     connected = loadpoint.connected,
                     charging = loadpoint.charging,
-                    vehicleSoc = loadpoint.vehicleSoc.roundToInt(),
+                    vehicleSoc = loadpoint.vehicleSoc?.roundToInt() ?: 0,
                     isLoading = false,
                     hasData = true
                 )

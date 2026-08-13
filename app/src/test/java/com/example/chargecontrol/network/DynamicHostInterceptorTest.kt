@@ -44,7 +44,7 @@ class DynamicHostInterceptorTest {
             portProvider = { 9999 }
         )
         val request = Request.Builder()
-            .url("http://chargecontrol.invalid:7070/api/state?frc=0")
+            .url("http://chargecontrol.invalid:7070/api/state?limit=10")
             .build()
         val chain = FakeChain(request)
 
@@ -54,7 +54,7 @@ class DynamicHostInterceptorTest {
         assertEquals("192.168.1.50", rewritten.host)
         assertEquals(9999, rewritten.port)
         assertEquals("/api/state", rewritten.encodedPath)
-        assertEquals("frc=0", rewritten.encodedQuery)
+        assertEquals("limit=10", rewritten.encodedQuery)
     }
 
     @Test

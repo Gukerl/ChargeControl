@@ -41,7 +41,7 @@ class EvccStateResponseTest {
         assertEquals(true, loadpoint.connected)
         assertEquals(true, loadpoint.charging)
         assertEquals(6.0, loadpoint.minCurrent, 0.0)
-        assertEquals(82.0, loadpoint.vehicleSoc, 0.0)
+        assertEquals(82.0, loadpoint.vehicleSoc!!, 0.0)
     }
 
     @Test
@@ -70,5 +70,41 @@ class EvccStateResponseTest {
 
         assertEquals("off", result.loadpoints.single().mode)
         assertFalse(result.loadpoints.single().connected)
+    }
+
+    @Test
+    fun `vehicleSoc defaults to null when absent or explicitly null`() {
+        val absentPayload = """
+            {
+              "loadpoints": [
+                {
+                  "mode": "now",
+                  "phasesConfigured": 0,
+                  "offeredCurrent": 0.0,
+                  "connected": false,
+                  "charging": false,
+                  "minCurrent": 6
+                }
+              ]
+            }
+        """.trimIndent()
+        val nullPayload = """
+            {
+              "loadpoints": [
+                {
+                  "mode": "now",
+                  "phasesConfigured": 0,
+                  "offeredCurrent": 0.0,
+                  "connected": false,
+                  "charging": false,
+                  "minCurrent": 6,
+                  "vehicleSoc": null
+                }
+              ]
+            }
+        """.trimIndent()
+
+        assertEquals(null, json.decodeFromString<EvccStateResponse>(absentPayload).loadpoints.single().vehicleSoc)
+        assertEquals(null, json.decodeFromString<EvccStateResponse>(nullPayload).loadpoints.single().vehicleSoc)
     }
 }

@@ -41,7 +41,7 @@ class WallboxViewModelTest {
         connected: Boolean = false,
         charging: Boolean = false,
         minCurrent: Double = 6.0,
-        vehicleSoc: Double = 0.0
+        vehicleSoc: Double? = 0.0
     ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent, vehicleSoc)
 
     private class FakeEvccApi(
@@ -255,6 +255,20 @@ class WallboxViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertEquals(83, viewModel.uiState.value.vehicleSoc)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState defaults vehicleSoc to 0 when evcc omits it`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(vehicleSoc = null))))
+        val viewModel = WallboxViewModel(evccApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(true, viewModel.uiState.value.hasData)
+        assertEquals(0, viewModel.uiState.value.vehicleSoc)
 
         viewModel.onStop()
     }
