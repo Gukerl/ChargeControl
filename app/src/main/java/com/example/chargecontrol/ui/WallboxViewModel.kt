@@ -41,6 +41,7 @@ class WallboxViewModel(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var pollingJob: Job? = null
+    private var wasUnreachable = false
 
     fun onStart() {
         if (pollingJob?.isActive == true) return
@@ -81,7 +82,8 @@ class WallboxViewModel(
                     _uiState.update { it.copy(errorMessage = "evcc-Fehler (${response.code()})") }
                 }
             } catch (e: IOException) {
-                _uiState.update { it.copy(errorMessage = "evcc nicht erreichbar") }
+                wasUnreachable = true
+                _uiState.update { it.copy(errorMessage = "EVCC nicht erreichbar, überprüfe WLAN oder EVCC Raspi") }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -103,6 +105,8 @@ class WallboxViewModel(
                 }
                 return
             }
+            val reconnected = wasUnreachable
+            wasUnreachable = false
             _uiState.update {
                 it.copy(
                     mode = loadpoint.mode,
@@ -114,11 +118,13 @@ class WallboxViewModel(
                     phasesActive = loadpoint.phasesActive,
                     vehicleSoc = loadpoint.vehicleSoc?.roundToInt() ?: 0,
                     isLoading = false,
-                    hasData = true
+                    hasData = true,
+                    errorMessage = if (reconnected) "Verbindung mit EVCC hergestellt" else it.errorMessage
                 )
             }
         } catch (e: IOException) {
-            _uiState.update { it.copy(isLoading = false, errorMessage = "evcc nicht erreichbar") }
+            wasUnreachable = true
+            _uiState.update { it.copy(isLoading = false, errorMessage = "EVCC nicht erreichbar, überprüfe WLAN oder EVCC Raspi") }
         } catch (e: HttpException) {
             _uiState.update { it.copy(isLoading = false, errorMessage = "evcc-Fehler (${e.code()})") }
         } catch (e: CancellationException) {

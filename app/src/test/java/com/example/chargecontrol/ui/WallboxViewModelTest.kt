@@ -109,7 +109,49 @@ class WallboxViewModelTest {
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
 
-        assertEquals("evcc nicht erreichbar", viewModel.uiState.value.errorMessage)
+        assertEquals(
+            "EVCC nicht erreichbar, überprüfe WLAN oder EVCC Raspi",
+            viewModel.uiState.value.errorMessage
+        )
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState surfaces a reconnected message after recovering from unreachable`() = runTest {
+        val evccApi = FakeEvccApi(
+            state = EvccStateResponse(listOf(loadpoint(mode = "now"))),
+            stateError = IOException("offline")
+        )
+        val viewModel = WallboxViewModel(evccApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+        assertEquals(
+            "EVCC nicht erreichbar, überprüfe WLAN oder EVCC Raspi",
+            viewModel.uiState.value.errorMessage
+        )
+
+        evccApi.stateError = null
+        dispatcher.scheduler.advanceTimeBy(Config.POLL_INTERVAL_MS + 1)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("Verbindung mit EVCC hergestellt", viewModel.uiState.value.errorMessage)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState does not show a reconnected message on a normal successful poll`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "now"))))
+        val viewModel = WallboxViewModel(evccApi)
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+        dispatcher.scheduler.advanceTimeBy(Config.POLL_INTERVAL_MS + 1)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(null, viewModel.uiState.value.errorMessage)
 
         viewModel.onStop()
     }
