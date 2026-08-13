@@ -730,16 +730,16 @@ class SettingsRepositoryTest {
 
 - [ ] **Step 9: Verify the project builds and all tests pass**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/remove-goe-add-status && ./gradlew assembleDebug`
 Expected: `BUILD SUCCESSFUL`.
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/remove-goe-add-status && ./gradlew testDebugUnitTest`
 Expected: `BUILD SUCCESSFUL`, all tests pass (the full suite, since this task fully removes go-e everywhere it was referenced — there must be zero remaining references to `GoeApi`/`goeApi`/`goeHost` anywhere in `app/src/main` or `app/src/test` after this task; grep for `[Gg]o.?[Ee]` under `app/src` to confirm no stragglers besides comments/strings that aren't code references, e.g. the design doc or unrelated text).
 
 - [ ] **Step 10: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/remove-goe-add-status
 git add -A
 git commit -m "feat: remove go-e entirely, make app start purely read-only"
 ```
@@ -1314,16 +1314,16 @@ Then add this new test at the end of the class, right before the final closing `
 
 - [ ] **Step 6: Verify the project builds and all tests pass**
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew assembleDebug`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/remove-goe-add-status && ./gradlew assembleDebug`
 Expected: `BUILD SUCCESSFUL`.
 
-Run: `cd /home/andi/AndroidStudioProjects/ChargeControl && ./gradlew testDebugUnitTest`
+Run: `cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/remove-goe-add-status && ./gradlew testDebugUnitTest`
 Expected: `BUILD SUCCESSFUL`, all tests pass (full suite plus the new `vehicleSoc` rounding test).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/andi/AndroidStudioProjects/ChargeControl
+cd /home/andi/AndroidStudioProjects/ChargeControl/.worktrees/remove-goe-add-status
 git add app/src/main/java/com/example/chargecontrol/network/EvccApi.kt app/src/main/java/com/example/chargecontrol/ui/WallboxViewModel.kt app/src/main/java/com/example/chargecontrol/ui/MainScreen.kt app/src/test/java/com/example/chargecontrol/network/EvccStateResponseTest.kt app/src/test/java/com/example/chargecontrol/ui/WallboxViewModelTest.kt
 git commit -m "feat: add vehicleSoc and Fahrzeug-verbunden status line"
 ```
