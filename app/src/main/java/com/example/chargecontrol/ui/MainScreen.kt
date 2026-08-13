@@ -1,15 +1,20 @@
 package com.example.chargecontrol.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -22,11 +27,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -34,12 +39,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+private const val HOLD_TO_CONFIRM_MS = 2000L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,29 +102,27 @@ fun MainScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                SelectableButton(
+                HoldToConfirmButton(
                     "PV-Überschuss (minpv)",
                     isActive = uiState.mode == "minpv",
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("minpv") }
-                SelectableButton(
+                HoldToConfirmButton(
                     "Nur PV (pv)",
                     isActive = uiState.mode == "pv",
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("pv") }
-                SelectableButton(
+                HoldToConfirmButton(
                     "Sofortladen (now)",
                     isActive = uiState.mode == "now",
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("now") }
-                OutlinedButton(
-                    onClick = onStop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text("Laden stoppen")
-                }
+                HoldToConfirmButton(
+                    "Laden stoppen",
+                    isActive = false,
+                    outlined = true,
+                    modifier = Modifier.fillMaxWidth()
+                ) { onStop() }
             }
 
             AdvancedSettings(
@@ -218,6 +227,87 @@ private fun AdvancedSettings(
                 valueRange = 6f..16f,
                 steps = 9
             )
+        }
+    }
+}
+
+/**
+ * A button that only fires [onConfirmed] after being pressed and held for
+ * [HOLD_TO_CONFIRM_MS] — a plain tap does nothing. The background fills
+ * left-to-right while held, as progress feedback; releasing early resets it.
+ */
+@Composable
+private fun HoldToConfirmButton(
+    label: String,
+    isActive: Boolean,
+    enabled: Boolean = true,
+    outlined: Boolean = false,
+    modifier: Modifier = Modifier,
+    onConfirmed: () -> Unit
+) {
+    val interactive = enabled && !isActive
+    var progress by remember { mutableStateOf(0f) }
+    val scope = rememberCoroutineScope()
+
+    val backgroundColor = when {
+        !interactive -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+        outlined -> MaterialTheme.colorScheme.surface
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val contentColor = when {
+        !interactive -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        outlined -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onPrimary
+    }
+    val fillColor = contentColor.copy(alpha = 0.25f)
+
+    Surface(
+        modifier = modifier
+            .heightIn(min = 56.dp)
+            .then(
+                if (interactive) {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(
+                            onPress = {
+                                val holdJob = scope.launch {
+                                    val steps = 40
+                                    val stepDuration = HOLD_TO_CONFIRM_MS / steps
+                                    for (i in 1..steps) {
+                                        delay(stepDuration)
+                                        progress = i / steps.toFloat()
+                                    }
+                                    onConfirmed()
+                                }
+                                tryAwaitRelease()
+                                holdJob.cancel()
+                                progress = 0f
+                            }
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            ),
+        shape = RoundedCornerShape(50),
+        color = backgroundColor,
+        contentColor = contentColor,
+        border = if (outlined) {
+            BorderStroke(
+                1.dp,
+                if (interactive) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+            )
+        } else {
+            null
+        }
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(progress)
+                    .background(fillColor)
+            )
+            Text(label, modifier = Modifier.padding(horizontal = 16.dp))
         }
     }
 }
