@@ -1,0 +1,12 @@
+ChargeControl ist eine schlanke Steuer-App für deine private EV-Ladeinfrastruktur mit evcc und optional einer go-e Wallbox.
+
+Funktionen:
+* Lademodus wählen: kW min + PV-Überschuss, PV-Überschuss, Schnellladen oder Stopp
+* Status auf einen Blick: Modus, Ladestrom, aktive Phasen, Fahrzeug-Verbindung und Akkustand
+* Ladestrom-Einstellungen: Phasenzahl (1-/3-phasig) und Mindest-Ladestrom manuell festlegen
+* Optionale go-e-Autorisierung mit RFID-Kontoauswahl — auf Wunsch automatisch, sobald ein Fahrzeug angeschlossen wird
+* Steuer-Buttons mit einstellbarer Bestätigungszeit gegen versehentliches Antippen
+
+ChargeControl verbindet sich ausschließlich mit Geräten in deinem eigenen WLAN — kein Konto, keine Cloud, kein Tracking. evcc- und go-e-IP konfigurierst du einmalig in den Einstellungen.
+
+Voraussetzung: eine laufende evcc-Installation (z. B. Raspberry Pi), optional eine go-e Wallbox im selben Heimnetz.

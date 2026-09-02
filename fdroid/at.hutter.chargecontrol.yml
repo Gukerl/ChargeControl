@@ -1,0 +1,30 @@
+# Referenz-Metadaten für eine F-Droid-Einreichung (fdroiddata-Format).
+# Diese Datei liegt NICHT im offiziellen fdroiddata-Repo, sondern dient hier
+# nur als fertiger Entwurf, den du in eine Merge Request bei
+# https://gitlab.com/fdroid/fdroiddata einfügen kannst.
+
+Categories:
+  - Connectivity
+License: GPL-3.0-or-later
+AuthorName: Andreas Hutter
+SourceCode: https://github.com/Gukerl/ChargeControl
+IssueTracker: https://github.com/Gukerl/ChargeControl/issues
+
+AutoName: ChargeControl
+Summary: Ladesteuerung für evcc & go-e Wallbox
+
+RepoType: git
+Repo: https://github.com/Gukerl/ChargeControl
+
+Builds:
+  - versionName: '1.0'
+    versionCode: 1
+    commit: v1.0
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0'
+CurrentVersionCode: 1

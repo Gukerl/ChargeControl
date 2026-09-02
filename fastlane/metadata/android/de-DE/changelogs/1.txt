@@ -1,0 +1,1 @@
+Erste Version: Lademodus-Steuerung über evcc, Status-Übersicht, optionale go-e-Autorisierung, konfigurierbare Bestätigungszeit.
