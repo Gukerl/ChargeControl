@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
+import com.example.chargecontrol.network.GoeApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,7 +35,11 @@ data class UiState(
 )
 
 class WallboxViewModel(
-    private val evccApi: EvccApi
+    private val evccApi: EvccApi,
+    private val goeApi: GoeApi,
+    private val goeTrxProvider: () -> Int,
+    private val goeEnabledProvider: () -> Boolean,
+    private val goeAutoAuthorizeProvider: () -> Boolean
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -42,9 +47,11 @@ class WallboxViewModel(
 
     private var pollingJob: Job? = null
     private var wasUnreachable = false
+    private var autoAuthorizeChecked = false
 
     fun onStart() {
         if (pollingJob?.isActive == true) return
+        autoAuthorizeChecked = false
         pollingJob = viewModelScope.launch {
             while (isActive) {
                 fetchState()
@@ -72,6 +79,46 @@ class WallboxViewModel(
 
     fun errorShown() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    fun authorizeGoe() {
+        viewModelScope.launch {
+            performGoeAuthorize(successMessage = "go-e Autorisierung gesendet")
+        }
+    }
+
+    private suspend fun performGoeAuthorize(successMessage: String) {
+        try {
+            val response = goeApi.authorize(trx = goeTrxProvider())
+            if (response.isSuccessful) {
+                _uiState.update { it.copy(errorMessage = successMessage) }
+            } else if (response.code() == 500) {
+                // go-e answers 500 when the wallbox is already authorized for this trx —
+                // not a real error, so show it as informational rather than a failure.
+                _uiState.update { it.copy(errorMessage = "Wallbox bereits autorisiert") }
+            } else {
+                _uiState.update { it.copy(errorMessage = "go-e-Fehler (${response.code()})") }
+            }
+        } catch (e: IOException) {
+            _uiState.update { it.copy(errorMessage = "go-e nicht erreichbar, überprüfe WLAN oder go-e IP") }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _uiState.update { it.copy(errorMessage = "Unerwartete Antwort von go-e") }
+        }
+    }
+
+    /**
+     * Runs at most once per app-open (reset in [onStart]): if go-e is enabled,
+     * auto-authorize is turned on, and the vehicle was connected on the first
+     * successful evcc fetch since opening the app, authorize automatically.
+     */
+    private suspend fun maybeAutoAuthorizeGoe(connected: Boolean) {
+        if (autoAuthorizeChecked) return
+        autoAuthorizeChecked = true
+        if (goeEnabledProvider() && goeAutoAuthorizeProvider() && connected) {
+            performGoeAuthorize(successMessage = "Autorisierung erfolgreich")
+        }
     }
 
     private fun performLoadpointUpdate(action: suspend () -> Response<ResponseBody>) {
@@ -122,6 +169,7 @@ class WallboxViewModel(
                     errorMessage = if (reconnected) "Verbindung mit EVCC hergestellt" else it.errorMessage
                 )
             }
+            maybeAutoAuthorizeGoe(loadpoint.connected)
         } catch (e: IOException) {
             wasUnreachable = true
             _uiState.update { it.copy(isLoading = false, errorMessage = "EVCC nicht erreichbar, überprüfe WLAN oder EVCC Raspi") }

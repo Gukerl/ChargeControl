@@ -8,6 +8,8 @@ interface KeyValueStore {
     fun putString(key: String, value: String)
     fun getInt(key: String, default: Int): Int
     fun putInt(key: String, value: Int)
+    fun getBoolean(key: String, default: Boolean): Boolean
+    fun putBoolean(key: String, value: Boolean)
 }
 
 class SharedPreferencesKeyValueStore(context: Context) : KeyValueStore {
@@ -25,5 +27,11 @@ class SharedPreferencesKeyValueStore(context: Context) : KeyValueStore {
 
     override fun putInt(key: String, value: Int) {
         prefs.edit { putInt(key, value) }
+    }
+
+    override fun getBoolean(key: String, default: Boolean): Boolean = prefs.getBoolean(key, default)
+
+    override fun putBoolean(key: String, value: Boolean) {
+        prefs.edit { putBoolean(key, value) }
     }
 }

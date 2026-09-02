@@ -104,7 +104,15 @@ fun ChargeControlApp() {
 
     val viewModel: WallboxViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { WallboxViewModel(NetworkModule.evccApi) }
+            initializer {
+                WallboxViewModel(
+                    NetworkModule.evccApi,
+                    NetworkModule.goeApi,
+                    goeTrxProvider = { SettingsRepository.goeTrx },
+                    goeEnabledProvider = { SettingsRepository.goeEnabled },
+                    goeAutoAuthorizeProvider = { SettingsRepository.goeAutoAuthorize }
+                )
+            }
         }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -144,7 +152,10 @@ fun ChargeControlApp() {
             onSettingsClick = {
                 viewModel.errorShown()
                 showSettings = true
-            }
+            },
+            onGoeAuthorize = viewModel::authorizeGoe,
+            holdConfirmMs = SettingsRepository.holdConfirmMs.toLong(),
+            goeEnabled = SettingsRepository.goeEnabled
         )
     }
 }

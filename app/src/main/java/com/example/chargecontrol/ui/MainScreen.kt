@@ -2,6 +2,7 @@ package com.example.chargecontrol.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,12 +47,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.chargecontrol.ui.theme.ChargeControlTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-
-private const val HOLD_TO_CONFIRM_MS = 2000L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +64,9 @@ fun MainScreen(
     onPhasesSelected: (Int) -> Unit,
     onMinCurrentChanged: (Int) -> Unit,
     onSettingsClick: () -> Unit,
+    onGoeAuthorize: () -> Unit,
+    holdConfirmMs: Long,
+    goeEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -99,28 +103,42 @@ fun MainScreen(
         ) {
             StatusCard(uiState)
 
+            if (goeEnabled) {
+                HoldToConfirmButton(
+                    "go-e Autorisierung",
+                    isActive = false,
+                    holdMs = holdConfirmMs,
+                    outlined = true,
+                    modifier = Modifier.fillMaxWidth()
+                ) { onGoeAuthorize() }
+            }
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 HoldToConfirmButton(
-                    "kW min + Überschuss (minpv)",
+                    "kW min + PV Überschuss (Min+PV)",
                     isActive = uiState.mode == "minpv",
+                    holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("minpv") }
                 HoldToConfirmButton(
-                    "nur PV-Überschuss",
+                    "PV-Überschuss (PV)",
                     isActive = uiState.mode == "pv",
+                    holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("pv") }
                 HoldToConfirmButton(
-                    "Sofortladen (now)",
+                    "Schnellladen (Schnell)",
                     isActive = uiState.mode == "now",
+                    holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("now") }
                 HoldToConfirmButton(
                     "Laden stoppen",
                     isActive = false,
+                    holdMs = holdConfirmMs,
                     outlined = true,
                     modifier = Modifier.fillMaxWidth()
                 ) { onStop() }
@@ -191,7 +209,7 @@ private fun AdvancedSettings(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Checkbox(checked = unlocked, onCheckedChange = { unlocked = it })
-            Text("Erweiterte Einstellungen entsperren")
+            Text("Ladestrom Einstellungen")
         }
 
         if (unlocked) {
@@ -233,14 +251,17 @@ private fun AdvancedSettings(
 }
 
 /**
- * A button that only fires [onConfirmed] after being pressed and held for
- * [HOLD_TO_CONFIRM_MS] — a plain tap does nothing. The background fills
- * left-to-right while held, as progress feedback; releasing early resets it.
+ * A button that fires [onConfirmed] only after being pressed and held for
+ * [holdMs] — a plain tap does nothing. The background fills left-to-right
+ * while held, as progress feedback; releasing early resets it. When
+ * [holdMs] is 0 (the "Aus" setting), the hold gesture is skipped entirely
+ * and the button fires immediately on tap release, like a normal button.
  */
 @Composable
 private fun HoldToConfirmButton(
     label: String,
     isActive: Boolean,
+    holdMs: Long,
     enabled: Boolean = true,
     outlined: Boolean = false,
     modifier: Modifier = Modifier,
@@ -266,13 +287,15 @@ private fun HoldToConfirmButton(
         modifier = modifier
             .height(56.dp)
             .then(
-                if (interactive) {
-                    Modifier.pointerInput(Unit) {
+                when {
+                    !interactive -> Modifier
+                    holdMs <= 0L -> Modifier.clickable(onClick = onConfirmed)
+                    else -> Modifier.pointerInput(holdMs) {
                         detectTapGestures(
                             onPress = {
                                 val holdJob = scope.launch {
                                     val steps = 40
-                                    val stepDuration = HOLD_TO_CONFIRM_MS / steps
+                                    val stepDuration = holdMs / steps
                                     for (i in 1..steps) {
                                         delay(stepDuration)
                                         progress = i / steps.toFloat()
@@ -285,8 +308,6 @@ private fun HoldToConfirmButton(
                             }
                         )
                     }
-                } else {
-                    Modifier
                 }
             ),
         shape = RoundedCornerShape(50),
@@ -331,9 +352,9 @@ private fun SelectableButton(
 }
 
 private fun modeLabel(mode: String): String = when (mode) {
-    "minpv" -> "kW min + Überschuss (minpv)"
-    "pv" -> "nur PV-Überschuss"
-    "now" -> "Sofortladen (now)"
+    "minpv" -> "kW min + PV Überschuss (Min+PV)"
+    "pv" -> "PV-Überschuss (PV)"
+    "now" -> "Schnellladen (Schnell)"
     "off" -> "Aus"
     else -> mode
 }
@@ -348,4 +369,83 @@ private fun activePhasesLabel(phasesActive: Int): String = when (phasesActive) {
     1 -> "1-phasig"
     3 -> "3-phasig"
     else -> "–"
+}
+
+@Preview(showBackground = true, name = "Lädt – PV-Überschuss")
+@Composable
+private fun MainScreenChargingPreview() {
+    ChargeControlTheme {
+        MainScreen(
+            uiState = UiState(
+                mode = "pv",
+                phasesConfigured = 0,
+                offeredCurrent = 14.0,
+                minCurrent = 6,
+                connected = true,
+                charging = true,
+                phasesActive = 3,
+                vehicleSoc = 68,
+                isLoading = false,
+                hasData = true
+            ),
+            onModeSelected = {},
+            onStop = {},
+            onErrorShown = {},
+            onPhasesSelected = {},
+            onMinCurrentChanged = {},
+            onSettingsClick = {},
+            onGoeAuthorize = {},
+            holdConfirmMs = 1000L,
+            goeEnabled = true
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Kein Fahrzeug verbunden")
+@Composable
+private fun MainScreenDisconnectedPreview() {
+    ChargeControlTheme {
+        MainScreen(
+            uiState = UiState(
+                mode = "off",
+                phasesConfigured = 0,
+                offeredCurrent = 0.0,
+                minCurrent = 6,
+                connected = false,
+                charging = false,
+                phasesActive = 0,
+                vehicleSoc = 0,
+                isLoading = false,
+                hasData = true
+            ),
+            onModeSelected = {},
+            onStop = {},
+            onErrorShown = {},
+            onPhasesSelected = {},
+            onMinCurrentChanged = {},
+            onSettingsClick = {},
+            onGoeAuthorize = {},
+            holdConfirmMs = 1000L,
+            goeEnabled = true
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Lade Status …")
+@Composable
+private fun MainScreenLoadingPreview() {
+    ChargeControlTheme {
+        MainScreen(
+            uiState = UiState(isLoading = true, hasData = false),
+            onModeSelected = {},
+            onStop = {},
+            onErrorShown = {},
+            onPhasesSelected = {},
+            onMinCurrentChanged = {},
+            onSettingsClick = {},
+            onGoeAuthorize = {},
+            holdConfirmMs = 1000L,
+            goeEnabled = true
+        )
+    }
 }

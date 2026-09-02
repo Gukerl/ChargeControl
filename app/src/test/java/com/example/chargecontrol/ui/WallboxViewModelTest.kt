@@ -3,6 +3,7 @@ package com.example.chargecontrol.ui
 import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
 import com.example.chargecontrol.network.EvccStateResponse
+import com.example.chargecontrol.network.GoeApi
 import com.example.chargecontrol.network.LoadpointDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -79,10 +80,31 @@ class WallboxViewModelTest {
         }
     }
 
+    private class FakeGoeApi(
+        var authorizeResponse: Response<ResponseBody> = Response.success(null),
+        var authorizeError: Throwable? = null
+    ) : GoeApi {
+        var lastTrx: Int? = null
+        var authorizeCallCount = 0
+
+        override suspend fun authorize(trx: Int): Response<ResponseBody> {
+            authorizeCallCount++
+            lastTrx = trx
+            authorizeError?.let { throw it }
+            return authorizeResponse
+        }
+    }
+
     @Test
     fun `onStart loads initial state without sending any control command`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "pv", offeredCurrent = 9.5))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -104,7 +126,13 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint(mode = "now"))),
             stateError = IOException("offline")
         )
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -123,7 +151,13 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint(mode = "now"))),
             stateError = IOException("offline")
         )
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -144,7 +178,13 @@ class WallboxViewModelTest {
     @Test
     fun `fetchState does not show a reconnected message on a normal successful poll`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "now"))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -159,7 +199,13 @@ class WallboxViewModelTest {
     @Test
     fun `setMode posts the new mode and refreshes state`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "minpv"))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.setMode("minpv")
         dispatcher.scheduler.runCurrent()
@@ -174,7 +220,13 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint(mode = "now"))),
             setModeResponse = Response.error(500, "".toResponseBody(null))
         )
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.setMode("now")
         dispatcher.scheduler.runCurrent()
@@ -186,7 +238,13 @@ class WallboxViewModelTest {
     @Test
     fun `onStop cancels polling so no further state fetches happen`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -205,7 +263,13 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint())),
             stateError = IOException("offline")
         )
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -219,7 +283,13 @@ class WallboxViewModelTest {
     @Test
     fun `empty loadpoints list surfaces an error instead of hanging`() = runTest {
         val evccApi = FakeEvccApi(state = EvccStateResponse(emptyList()))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -239,7 +309,13 @@ class WallboxViewModelTest {
             state = EvccStateResponse(listOf(loadpoint())),
             stateError = IllegalStateException("bad json")
         )
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -253,7 +329,13 @@ class WallboxViewModelTest {
     @Test
     fun `poll loop fetches state again after the poll interval elapses`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -268,7 +350,13 @@ class WallboxViewModelTest {
     @Test
     fun `setPhases posts the new phase mode and refreshes state`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(phasesConfigured = 3))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.setPhases(3)
         dispatcher.scheduler.runCurrent()
@@ -280,7 +368,13 @@ class WallboxViewModelTest {
     @Test
     fun `setMinCurrent posts the new current and refreshes state`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(minCurrent = 10.0))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.setMinCurrent(10)
         dispatcher.scheduler.runCurrent()
@@ -292,7 +386,13 @@ class WallboxViewModelTest {
     @Test
     fun `fetchState populates vehicleSoc rounded to the nearest percent`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(vehicleSoc = 82.6))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -305,7 +405,13 @@ class WallboxViewModelTest {
     @Test
     fun `fetchState defaults vehicleSoc to 0 when evcc omits it`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(vehicleSoc = null))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
@@ -319,12 +425,220 @@ class WallboxViewModelTest {
     @Test
     fun `fetchState populates phasesActive`() = runTest {
         val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(phasesActive = 1))))
-        val viewModel = WallboxViewModel(evccApi)
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
 
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
 
         assertEquals(1, viewModel.uiState.value.phasesActive)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `authorizeGoe calls the go-e API with the configured trx and shows a confirmation`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 7 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.authorizeGoe()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(7, goeApi.lastTrx)
+        assertEquals("go-e Autorisierung gesendet", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `authorizeGoe failure response surfaces an error message`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi(authorizeResponse = Response.error(503, "".toResponseBody(null)))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.authorizeGoe()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("go-e-Fehler (503)", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `authorizeGoe treats a 500 response as already-authorized, not an error`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi(authorizeResponse = Response.error(500, "".toResponseBody(null)))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.authorizeGoe()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("Wallbox bereits autorisiert", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `authorizeGoe unreachable surfaces the go-e unreachable message`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi(authorizeError = IOException("offline"))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.authorizeGoe()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(
+            "go-e nicht erreichbar, überprüfe WLAN oder go-e IP",
+            viewModel.uiState.value.errorMessage
+        )
+    }
+
+    @Test
+    fun `onStart auto-authorizes go-e when enabled, auto-authorize on, and vehicle connected`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(connected = true))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 3 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { true }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(3, goeApi.lastTrx)
+        assertEquals("Autorisierung erfolgreich", viewModel.uiState.value.errorMessage)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `onStart does not auto-authorize when vehicle is not connected`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(connected = false))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { true }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(null, goeApi.lastTrx)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `onStart does not auto-authorize when go-e is disabled`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(connected = true))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { true }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(null, goeApi.lastTrx)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `onStart does not auto-authorize when the auto-authorize setting is off`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(connected = true))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(null, goeApi.lastTrx)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `auto-authorize surfaces the already-authorized message instead of go-e Fehler 500`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(connected = true))))
+        val goeApi = FakeGoeApi(authorizeResponse = Response.error(500, "".toResponseBody(null)))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { true }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("Wallbox bereits autorisiert", viewModel.uiState.value.errorMessage)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `auto-authorize only fires once per app-open, not on every poll`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(connected = true))))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { true }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+        dispatcher.scheduler.advanceTimeBy(Config.POLL_INTERVAL_MS + 1)
+        dispatcher.scheduler.runCurrent()
+        dispatcher.scheduler.advanceTimeBy(Config.POLL_INTERVAL_MS + 1)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(1, goeApi.authorizeCallCount)
 
         viewModel.onStop()
     }
