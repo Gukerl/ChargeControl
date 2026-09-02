@@ -1,0 +1,600 @@
+<title>ChargeControl — Architektur & Aufbau</title>
+<style>
+  :root {
+    --bg: #F4F6F4;
+    --surface: #FFFFFF;
+    --surface-2: #EAEFEA;
+    --border: #D6DED8;
+    --text: #16211D;
+    --text-dim: #55645D;
+    --accent: #1F8F55;
+    --accent-ink: #0F5C36;
+    --accent-warm: #B3701D;
+    --accent-blue: #2C5C82;
+    --code-bg: #101A16;
+    --code-text: #CFE8DA;
+    --shadow: 0 1px 2px rgba(16, 26, 22, 0.06), 0 6px 20px -8px rgba(16, 26, 22, 0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121B17;
+      --surface: #182420;
+      --surface-2: #1F2E27;
+      --border: #2B3D33;
+      --text: #E7F1EC;
+      --text-dim: #9BB0A5;
+      --accent: #40CC86;
+      --accent-ink: #9FE8C0;
+      --accent-warm: #E8A33D;
+      --accent-blue: #79B2DA;
+      --code-bg: #0B120F;
+      --code-text: #B9E8CE;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px -10px rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121B17;
+    --surface: #182420;
+    --surface-2: #1F2E27;
+    --border: #2B3D33;
+    --text: #E7F1EC;
+    --text-dim: #9BB0A5;
+    --accent: #40CC86;
+    --accent-ink: #9FE8C0;
+    --accent-warm: #E8A33D;
+    --accent-blue: #79B2DA;
+    --code-bg: #0B120F;
+    --code-text: #B9E8CE;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px -10px rgba(0, 0, 0, 0.5);
+  }
+  :root[data-theme="light"] {
+    --bg: #F4F6F4;
+    --surface: #FFFFFF;
+    --surface-2: #EAEFEA;
+    --border: #D6DED8;
+    --text: #16211D;
+    --text-dim: #55645D;
+    --accent: #1F8F55;
+    --accent-ink: #0F5C36;
+    --accent-warm: #B3701D;
+    --accent-blue: #2C5C82;
+    --code-bg: #101A16;
+    --code-text: #CFE8DA;
+    --shadow: 0 1px 2px rgba(16, 26, 22, 0.06), 0 6px 20px -8px rgba(16, 26, 22, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  h1, h2, h3 {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", "JetBrains Mono", monospace;
+    text-wrap: balance;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+
+  code, .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", "JetBrains Mono", monospace; }
+
+  /* ---------- Header ---------- */
+  header.hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .eyebrow .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    flex: none;
+  }
+  h1.title { font-size: clamp(2rem, 5vw, 2.6rem); letter-spacing: -0.01em; }
+  .subtitle { color: var(--text-dim); font-size: 1.05rem; max-width: 60ch; }
+
+  .stackrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+  }
+  .chip {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  /* ---------- TOC ---------- */
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.75rem 0 0;
+  }
+  nav.toc a {
+    font-size: 0.82rem;
+    color: var(--text);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--accent); color: var(--accent-ink); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 3.25rem; scroll-margin-top: 1.5rem; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+  }
+  .section-num {
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  h2.section-title { font-size: 1.3rem; letter-spacing: -0.005em; }
+  section > p { color: var(--text-dim); max-width: 68ch; }
+  section > p.lead { color: var(--text); font-size: 1.02rem; max-width: 68ch; }
+
+  a { color: var(--accent-ink); }
+
+  /* ---------- Diagram card ---------- */
+  .diagram-card {
+    background:
+      radial-gradient(color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px) 0 0/22px 22px,
+      var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.25rem 0.5rem;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .diagram-card svg { display: block; width: 100%; height: auto; min-width: 560px; }
+  figure { margin: 0; }
+  figcaption {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    padding: 0.85rem 0.1rem 1rem;
+    max-width: 68ch;
+  }
+
+  svg text { fill: currentColor; font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace; }
+  .diagram-card svg .box-title { font-weight: 700; font-size: 12.5px; }
+  .diagram-card svg .box-sub { font-size: 10.5px; opacity: 0.7; }
+  .diagram-card svg .edge-label { font-size: 10px; opacity: 0.85; }
+  .diagram-card svg .grp-label { font-size: 10px; letter-spacing: 0.06em; opacity: 0.6; }
+
+  /* ---------- Table ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.88rem; }
+  thead th {
+    text-align: left;
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.path { font-family: ui-monospace, monospace; font-size: 0.82rem; color: var(--accent-ink); white-space: nowrap; }
+  td.role { color: var(--text-dim); }
+
+  /* ---------- Flow steps ---------- */
+  ol.flow {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  ol.flow li {
+    display: grid;
+    grid-template-columns: 2.75rem 1fr;
+    gap: 0.9rem;
+    padding: 0.95rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  ol.flow li:last-child { border-bottom: none; }
+  ol.flow .num {
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 700;
+    padding-top: 0.15rem;
+  }
+  ol.flow .step-title { font-weight: 600; }
+  ol.flow .step-body { color: var(--text-dim); font-size: 0.92rem; margin-top: 0.15rem; }
+
+  /* ---------- Decision cards ---------- */
+  .decisions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .decision {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow);
+  }
+  .decision.warm { border-left-color: var(--accent-warm); }
+  .decision.blue { border-left-color: var(--accent-blue); }
+  .decision h3 { font-size: 0.92rem; margin-bottom: 0.4rem; }
+  .decision p { color: var(--text-dim); font-size: 0.88rem; margin: 0; }
+
+  /* ---------- Test list ---------- */
+  .testgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem;
+  }
+  .testfile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+  }
+  .testfile .fname { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--accent-ink); display: block; margin-bottom: 0.25rem; }
+  .testfile .fdesc { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    nav.toc a { transition: border-color 0.15s ease, color 0.15s ease; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow"><span class="dot"></span> Projektdokumentation</div>
+    <h1 class="title">ChargeControl — Architektur &amp; Aufbau</h1>
+    <p class="subtitle">Native Android-App zur Steuerung eines evcc-Ladepunkts über die lokale WLAN-REST-API. Paket <code>com.example.chargecontrol</code>, Stand 13. August 2026.</p>
+    <div class="stackrow">
+      <span class="chip">Kotlin 2.2.10</span>
+      <span class="chip">Jetpack Compose · BOM 2025.12.00</span>
+      <span class="chip">Material 3</span>
+      <span class="chip">Retrofit 2.11.0</span>
+      <span class="chip">OkHttp 4.12.0</span>
+      <span class="chip">kotlinx.serialization 1.7.3</span>
+      <span class="chip">kotlinx.coroutines 1.9.0</span>
+      <span class="chip">minSdk 24 · target/compile 37</span>
+    </div>
+    <nav class="toc" aria-label="Inhaltsverzeichnis">
+      <a href="#ueberblick">Überblick</a>
+      <a href="#system">Systemarchitektur</a>
+      <a href="#schichten">Schichten &amp; Datenfluss</a>
+      <a href="#module">Modulübersicht</a>
+      <a href="#ablauf">UI-Ablauf</a>
+      <a href="#entscheidungen">Entscheidungen</a>
+      <a href="#tests">Tests</a>
+    </nav>
+  </header>
+
+  <section id="ueberblick">
+    <div class="section-head"><span class="section-num">01</span><h2 class="section-title">Überblick</h2></div>
+    <p class="lead">ChargeControl spricht ausschließlich mit <strong>evcc</strong> (Open-Source-Energiemanager, hier auf einem Raspberry Pi im Heimnetz) über dessen REST-API — nie direkt mit der Wallbox. Die App liest Status (Modus, Ladestrom, aktive Phasen, Fahrzeug-SoC) und schreibt drei Steuerbefehle: Lademodus, Phasenzahl, Mindest-Ladestrom. Beim Start werden ausschließlich Daten gelesen — es wird bewusst kein Steuerbefehl automatisch gesendet.</p>
+  </section>
+
+  <section id="system">
+    <div class="section-head"><span class="section-num">02</span><h2 class="section-title">Systemarchitektur</h2></div>
+    <p>Telefon und evcc-Raspi teilen sich dasselbe private WLAN; die App verbindet sich per Klartext-HTTP auf eine benutzerdefinierte IP:Port. Die Wallbox selbst wird ausschließlich von evcc angesteuert.</p>
+    <div class="diagram-card">
+      <figure>
+        <svg viewBox="0 0 760 300" role="img" aria-label="Systemdiagramm: ChargeControl-App und evcc befinden sich im selben privaten WLAN und kommunizieren per REST-API; evcc steuert separat die Wallbox an.">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <!-- WLAN grouping -->
+          <rect x="16" y="30" width="470" height="230" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-dasharray="4 4"></rect>
+          <text x="32" y="50" class="grp-label">HEIMNETZ / WLAN (PRIVATES IPV4)</text>
+
+          <!-- Phone box -->
+          <g>
+            <rect x="40" y="110" width="180" height="100" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+            <line x1="40" y1="130" x2="30" y2="130" stroke="currentColor"></line>
+            <line x1="40" y1="190" x2="30" y2="190" stroke="currentColor"></line>
+            <line x1="220" y1="150" x2="230" y2="150" stroke="currentColor"></line>
+            <text x="130" y="145" text-anchor="middle" class="box-title">ChargeControl</text>
+            <text x="130" y="163" text-anchor="middle" class="box-sub">Android-App</text>
+            <text x="130" y="192" text-anchor="middle" class="box-sub" fill="var(--accent-warm)">benötigt ACCESS_LOCAL_NETWORK</text>
+          </g>
+
+          <!-- evcc box -->
+          <g>
+            <rect x="310" y="110" width="150" height="100" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+            <line x1="310" y1="150" x2="300" y2="150" stroke="currentColor"></line>
+            <line x1="460" y1="150" x2="470" y2="150" stroke="currentColor"></line>
+            <text x="385" y="150" text-anchor="middle" class="box-title">evcc</text>
+            <text x="385" y="168" text-anchor="middle" class="box-sub">Raspberry Pi</text>
+            <text x="385" y="184" text-anchor="middle" class="box-sub">REST-API · Port 7070</text>
+          </g>
+
+          <!-- request/response arrows between phone and evcc -->
+          <line x1="230" y1="135" x2="300" y2="135" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow)"></line>
+          <text x="265" y="123" text-anchor="middle" class="edge-label" fill="var(--accent)">GET /state · alle 7s</text>
+
+          <line x1="300" y1="168" x2="230" y2="168" stroke="var(--accent-blue)" stroke-width="1.6" marker-end="url(#arrow)"></line>
+          <text x="265" y="188" text-anchor="middle" class="edge-label" fill="var(--accent-blue)">POST mode/phases/mincurrent</text>
+
+          <!-- Wallbox box (outside WLAN group, evcc's own link) -->
+          <g>
+            <rect x="580" y="110" width="150" height="100" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+            <line x1="580" y1="150" x2="570" y2="150" stroke="currentColor"></line>
+            <text x="655" y="150" text-anchor="middle" class="box-title">Wallbox</text>
+            <text x="655" y="168" text-anchor="middle" class="box-sub">EVSE / Ladestation</text>
+          </g>
+
+          <line x1="490" y1="150" x2="570" y2="150" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.4" stroke-dasharray="3 3" marker-end="url(#arrow)"></line>
+          <text x="530" y="138" text-anchor="middle" class="edge-label" opacity="0.7">steuert Ladung</text>
+
+          <text x="251" y="270" text-anchor="middle" class="grp-label" opacity="0.8">App kennt nur evcc — nie die Wallbox direkt</text>
+        </svg>
+      </figure>
+      <figcaption>Die App kommuniziert ausschließlich mit evcc im lokalen WLAN. Ohne die zur Laufzeit angeforderte <code>ACCESS_LOCAL_NETWORK</code>-Berechtigung (neu ab Android 17) schlägt jede Verbindung fehl.</figcaption>
+    </div>
+  </section>
+
+  <section id="schichten">
+    <div class="section-head"><span class="section-num">03</span><h2 class="section-title">Schichten &amp; Datenfluss</h2></div>
+    <p>Klassisches MVVM: Compose-Screens beobachten einen <code>StateFlow&lt;UiState&gt;</code>, der <code>WallboxViewModel</code> pollt evcc alle 7 Sekunden und kapselt alle Fehlerpfade. Host und Port sind zur Laufzeit änderbar, ohne dass Retrofit neu aufgebaut werden muss — ein <code>Interceptor</code> schreibt die Ziel-URL pro Request um.</p>
+    <div class="diagram-card">
+      <figure>
+        <svg viewBox="0 0 640 460" role="img" aria-label="Schichtdiagramm: Compose-UI ruft WallboxViewModel auf, dieser pollt über EvccApi und einen DynamicHostInterceptor, der Host und Port aus SettingsRepository liest, bevor die Anfrage an evcc geht. Fehler laufen als Snackbar zurück in die UI.">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <!-- UI -->
+          <rect x="40" y="16" width="360" height="64" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+          <text x="220" y="42" text-anchor="middle" class="box-title">Compose UI</text>
+          <text x="220" y="60" text-anchor="middle" class="box-sub">MainScreen · SettingsScreen</text>
+
+          <line x1="220" y1="80" x2="220" y2="112" stroke="currentColor" marker-end="url(#arrow2)"></line>
+          <text x="330" y="100" text-anchor="middle" class="edge-label">collectAsState() · onModeSelected() …</text>
+
+          <!-- ViewModel -->
+          <rect x="40" y="112" width="360" height="72" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+          <text x="220" y="140" text-anchor="middle" class="box-title">WallboxViewModel</text>
+          <text x="220" y="158" text-anchor="middle" class="box-sub">StateFlow&lt;UiState&gt;</text>
+          <path d="M 45 170 A 14 12 0 1 1 44 171" fill="none" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#arrow2)"></path>
+          <text x="70" y="175" class="edge-label" fill="var(--accent)">poll: delay(7000ms) solange isActive</text>
+
+          <line x1="220" y1="184" x2="220" y2="216" stroke="currentColor" marker-end="url(#arrow2)"></line>
+          <text x="330" y="204" text-anchor="middle" class="edge-label">suspend getState()/setMode() …</text>
+
+          <!-- EvccApi -->
+          <rect x="40" y="216" width="360" height="56" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+          <text x="220" y="240" text-anchor="middle" class="box-title">EvccApi</text>
+          <text x="220" y="256" text-anchor="middle" class="box-sub">Retrofit-Interface</text>
+
+          <line x1="220" y1="272" x2="220" y2="304" stroke="currentColor" marker-end="url(#arrow2)"></line>
+
+          <!-- Interceptor -->
+          <rect x="40" y="304" width="360" height="64" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+          <text x="220" y="330" text-anchor="middle" class="box-title">DynamicHostInterceptor</text>
+          <text x="220" y="348" text-anchor="middle" class="box-sub">schreibt Host + Port pro Request um</text>
+
+          <!-- Settings side box -->
+          <rect x="460" y="304" width="140" height="64" rx="6" fill="var(--surface-2)" stroke="var(--accent-blue)"></rect>
+          <text x="530" y="330" text-anchor="middle" class="box-title" fill="var(--accent-blue)">SettingsRepository</text>
+          <text x="530" y="348" text-anchor="middle" class="box-sub">host, port</text>
+          <line x1="460" y1="336" x2="400" y2="336" stroke="var(--accent-blue)" stroke-width="1.4" marker-end="url(#arrow2)"></line>
+          <text x="430" y="326" text-anchor="middle" class="edge-label" fill="var(--accent-blue)">liest</text>
+
+          <line x1="220" y1="368" x2="220" y2="400" stroke="currentColor" marker-end="url(#arrow2)"></line>
+          <text x="330" y="390" text-anchor="middle" class="edge-label">umgeschriebene URL</text>
+
+          <!-- evcc target -->
+          <rect x="40" y="400" width="360" height="48" rx="6" fill="var(--surface-2)" stroke="currentColor"></rect>
+          <text x="220" y="429" text-anchor="middle" class="box-title">evcc REST-API (LAN)</text>
+
+          <!-- error path back to UI -->
+          <path d="M 415 232 C 470 232, 470 40, 400 40" fill="none" stroke="var(--accent-warm)" stroke-width="1.4" stroke-dasharray="3 3" marker-end="url(#arrow2)"></path>
+          <text x="470" y="140" class="edge-label" fill="var(--accent-warm)" transform="rotate(90 470 140)">IOException → errorMessage → Snackbar</text>
+        </svg>
+      </figure>
+      <figcaption>Der Interceptor macht Host/Port zur Laufzeit änderbar, ohne dass Retrofit-Clients neu erzeugt werden müssen. Jeder Fehlerpfad (Timeout, HTTP-Fehler, Parsing) landet als <code>errorMessage</code> im <code>UiState</code> und wird einmalig als Snackbar angezeigt.</figcaption>
+    </div>
+  </section>
+
+  <section id="module">
+    <div class="section-head"><span class="section-num">04</span><h2 class="section-title">Modulübersicht</h2></div>
+    <p>Alle Dateien unter <code>app/src/main/java/com/example/chargecontrol/</code>.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Datei</th><th>Verantwortung</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="path">Config.kt</td><td class="role">Konstanten: Loadpoint-ID, Poll-Intervall (7000ms), HTTP-Timeout (5s)</td></tr>
+          <tr><td class="path">MainActivity.kt</td><td class="role">Einstiegspunkt; Berechtigungs-Gate für <code>ACCESS_LOCAL_NETWORK</code>; Lifecycle-Bindung (onStart/onStop); Umschaltung Haupt-/Einstellungsbildschirm</td></tr>
+          <tr><td class="path">SettingsRepository.kt</td><td class="role">Liest/schreibt evcc-Host und -Port; Default-Werte; Singleton-Objekt über <code>KeyValueStore</code></td></tr>
+          <tr><td class="path">KeyValueStore.kt</td><td class="role">Interface + SharedPreferences-Implementierung — Testbarkeit ohne Robolectric via Fake</td></tr>
+          <tr><td class="path">IpValidation.kt</td><td class="role">IPv4-Format- und Portprüfung; akzeptiert nur private Bereiche (10.x, 172.16–31.x, 192.168.x)</td></tr>
+          <tr><td class="path">network/EvccApi.kt</td><td class="role">Retrofit-Interface + <code>LoadpointDto</code>/<code>EvccStateResponse</code> (kotlinx.serialization)</td></tr>
+          <tr><td class="path">network/NetworkModule.kt</td><td class="role"><code>DynamicHostInterceptor</code>, OkHttp-/Retrofit-Aufbau, Singleton <code>evccApi</code></td></tr>
+          <tr><td class="path">ui/WallboxViewModel.kt</td><td class="role"><code>UiState</code>, Poll-Loop, Steuerbefehle, Fehler-/Reconnect-Meldungen</td></tr>
+          <tr><td class="path">ui/MainScreen.kt</td><td class="role">Statuskarte, 4 Hold-to-Confirm-Buttons, erweiterte Einstellungen (Phasen, Mindeststrom)</td></tr>
+          <tr><td class="path">ui/SettingsScreen.kt</td><td class="role">Host/Port-Formular mit Live-Validierung, Über-Karte</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ablauf">
+    <div class="section-head"><span class="section-num">05</span><h2 class="section-title">UI-Ablauf</h2></div>
+    <p>Von App-Start bis Statusanzeige — die Reihenfolge ist hier relevant, da jeder Schritt vom vorigen abhängt.</p>
+    <ol class="flow">
+      <li>
+        <span class="num">1</span>
+        <div>
+          <div class="step-title">Berechtigungs-Gate</div>
+          <div class="step-body">Ohne <code>ACCESS_LOCAL_NETWORK</code> zeigt die App einen eigenen Freigabe-Bildschirm statt des Hauptbildschirms — mit Button „Berechtigung erteilen“ bzw. „Einstellungen öffnen“, falls der Nutzer zuvor abgelehnt hat.</div>
+        </div>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <div>
+          <div class="step-title">Rein lesender Start</div>
+          <div class="step-body">Nach Erteilung startet der Poll-Loop sofort. Es wird ausschließlich <code>GET /state</code> aufgerufen — kein Steuerbefehl beim Start.</div>
+        </div>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <div>
+          <div class="step-title">Statuskarte</div>
+          <div class="step-body">Zeigt Modus (Klartext via <code>modeLabel()</code>), konfigurierte Phasen, „Ladestrom: X A – Y-phasig“ (kombiniert), „Fahrzeug verbunden: Ja/Nein“, „Ladestand: X %“ (nur bei verbundenem Fahrzeug) und den Ladezustand.</div>
+        </div>
+      </li>
+      <li>
+        <span class="num">4</span>
+        <div>
+          <div class="step-title">Hold-to-Confirm-Buttons</div>
+          <div class="step-body">Die 4 Hauptbuttons (kW min + Überschuss / nur PV-Überschuss / Sofortladen / Laden stoppen) lösen erst nach 2 Sekunden Drücken aus — ein Füllbalken im Hintergrund zeigt den Fortschritt, ein früher Loslassen setzt ihn zurück.</div>
+        </div>
+      </li>
+      <li>
+        <span class="num">5</span>
+        <div>
+          <div class="step-title">Erweiterte Einstellungen (optional)</div>
+          <div class="step-body">Phasen-Override und Mindeststrom-Regler sind komplett unsichtbar, bis die Checkbox „Erweiterte Einstellungen entsperren“ aktiviert wird — nicht nur deaktiviert.</div>
+        </div>
+      </li>
+      <li>
+        <span class="num">6</span>
+        <div>
+          <div class="step-title">Einstellungen (Zahnrad)</div>
+          <div class="step-body">evcc-IP/Port konfigurierbar mit Live-Validierung; „Über“-Karte mit App-Version.</div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="entscheidungen">
+    <div class="section-head"><span class="section-num">06</span><h2 class="section-title">Wichtige Entscheidungen &amp; Lektionen</h2></div>
+    <div class="decisions">
+      <div class="decision">
+        <h3>Dynamic-Host-Interceptor</h3>
+        <p>Host/Port sind laufzeitveränderlich, Retrofit-Clients bleiben aber Singletons. Ein <code>Interceptor</code> schreibt die Basis-URL pro Request um, statt Retrofit bei jeder Einstellungsänderung neu zu bauen.</p>
+      </div>
+      <div class="decision warm">
+        <h3>Compose-Höhenfalle</h3>
+        <p><code>fillMaxHeight()</code> ist wirkungslos ohne begrenzte Höhe. <code>heightIn(min=56.dp)</code> ließ die Fortschrittsanzeige unsichtbar kollabieren — behoben mit fixem <code>height(56.dp)</code>.</p>
+      </div>
+      <div class="decision">
+        <h3>Rein lesender Start</h3>
+        <p>Die früher go-e-integrierte App sendete beim Start automatisch einen Freigabe-Befehl. Bewusst entfernt: App-Start liest jetzt ausschließlich Status, sendet nie ungefragt Befehle.</p>
+      </div>
+      <div class="decision blue">
+        <h3>Nur private IP-Bereiche</h3>
+        <p>Die evcc-Host-Validierung akzeptiert nur 10.x, 172.16–31.x und 192.168.x — keine beliebigen öffentlichen IPs, obwohl das Netzwerk-Sicherheitskonzept generell Klartext-HTTP erlaubt (bewusster Trade-off, da die IP jetzt vom Nutzer änderbar ist).</p>
+      </div>
+      <div class="decision warm">
+        <h3>Nullable evcc-Felder</h3>
+        <p><code>vehicleSoc</code> liefert bei evcc explizit JSON-<code>null</code>, wenn kein Fahrzeug mit SoC verbunden ist, und ist zusätzlich ein <code>Double</code> mit Nachkommastellen — nicht als nicht-nullable Int annehmen, ohne gegen die echte Instanz zu prüfen.</p>
+      </div>
+      <div class="decision">
+        <h3>Sichtbarkeit statt Deaktivierung</h3>
+        <p>Erweiterte Einstellungen werden bis zum Entsperren komplett aus dem Composable entfernt, nicht nur mit <code>enabled = false</code> markiert — verhindert versehentliches Ablesen/Ändern.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tests">
+    <div class="section-head"><span class="section-num">07</span><h2 class="section-title">Tests</h2></div>
+    <p>Fakes statt Mocks, kein Robolectric, keine instrumentierten Tests — reine JVM-Unit-Tests unter <code>app/src/test/java/…</code>.</p>
+    <div class="testgrid">
+      <div class="testfile">
+        <span class="fname">WallboxViewModelTest.kt</span>
+        <span class="fdesc">Poll-Loop, Fehler-/Reconnect-Meldungen, Steuerbefehle, vehicleSoc-Rundung, leere Loadpoint-Liste — via <code>FakeEvccApi</code></span>
+      </div>
+      <div class="testfile">
+        <span class="fname">EvccStateResponseTest.kt</span>
+        <span class="fdesc">JSON-Parsing echter evcc-Payloads, unbekannte Felder werden ignoriert, <code>vehicleSoc</code>-Nullability</span>
+      </div>
+      <div class="testfile">
+        <span class="fname">DynamicHostInterceptorTest.kt</span>
+        <span class="fdesc">URL-Umschreibung via <code>FakeChain</code>, ohne echten Netzwerkzugriff</span>
+      </div>
+      <div class="testfile">
+        <span class="fname">IpValidationTest.kt</span>
+        <span class="fdesc">Private-Bereichs-Grenzfälle, Port-Range 1–65535</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>ChargeControl · <code>~/AndroidStudioProjects/ChargeControl</code></span>
+    <span>Entwickelt von Andreas Hutter · Stand 13.08.2026</span>
+  </footer>
+
+</div>
