@@ -56,4 +56,16 @@ class SettingsRepositoryTest {
 
         assertEquals(true, SettingsRepository.goeEnabled)
     }
+
+    @Test
+    fun `language defaults to empty string (follow system)`() {
+        assertEquals("", SettingsRepository.language)
+    }
+
+    @Test
+    fun `language persists a saved value`() {
+        SettingsRepository.language = "en"
+
+        assertEquals("en", SettingsRepository.language)
+    }
 }

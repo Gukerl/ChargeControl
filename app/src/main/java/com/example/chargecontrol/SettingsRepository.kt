@@ -10,6 +10,8 @@ object SettingsRepository {
     const val DEFAULT_HOLD_CONFIRM_MS = 1000
     const val DEFAULT_GOE_ENABLED = false
     const val DEFAULT_GOE_AUTO_AUTHORIZE = false
+    /** Empty string means "follow the system language". */
+    const val DEFAULT_LANGUAGE = ""
 
     private const val KEY_EVCC_HOST = "evcc_host"
     private const val KEY_EVCC_PORT = "evcc_port"
@@ -18,6 +20,11 @@ object SettingsRepository {
     private const val KEY_HOLD_CONFIRM_MS = "hold_confirm_ms"
     private const val KEY_GOE_ENABLED = "goe_enabled"
     private const val KEY_GOE_AUTO_AUTHORIZE = "goe_auto_authorize"
+
+    /** Shared Kotlin/Java-independent key name, also read directly by
+     *  [com.example.chargecontrol.MainActivity.attachBaseContext] before this
+     *  repository is initialized. Keep in sync if renamed. */
+    const val KEY_LANGUAGE = "language"
 
     @Volatile
     private lateinit var store: KeyValueStore
@@ -58,4 +65,9 @@ object SettingsRepository {
     var goeAutoAuthorize: Boolean
         get() = store.getBoolean(KEY_GOE_AUTO_AUTHORIZE, DEFAULT_GOE_AUTO_AUTHORIZE)
         set(value) = store.putBoolean(KEY_GOE_AUTO_AUTHORIZE, value)
+
+    /** "" = follow system language, otherwise a BCP-47 tag like "de" or "en". */
+    var language: String
+        get() = store.getString(KEY_LANGUAGE, DEFAULT_LANGUAGE)
+        set(value) = store.putString(KEY_LANGUAGE, value)
 }

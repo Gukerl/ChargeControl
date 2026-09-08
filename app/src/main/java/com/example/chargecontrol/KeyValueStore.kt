@@ -13,8 +13,12 @@ interface KeyValueStore {
 }
 
 class SharedPreferencesKeyValueStore(context: Context) : KeyValueStore {
+    companion object {
+        const val PREFS_NAME = "chargecontrol_settings"
+    }
+
     private val prefs = context.applicationContext
-        .getSharedPreferences("chargecontrol_settings", Context.MODE_PRIVATE)
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     override fun getString(key: String, default: String): String =
         prefs.getString(key, default) ?: default

@@ -1,5 +1,6 @@
 package com.example.chargecontrol.ui
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -41,10 +42,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.chargecontrol.KeyValueStore
+import com.example.chargecontrol.R
 import com.example.chargecontrol.SettingsRepository
 import com.example.chargecontrol.isValidIpv4
 import com.example.chargecontrol.isValidPort
@@ -52,16 +55,26 @@ import com.example.chargecontrol.ui.theme.ChargeControlTheme
 
 private const val DONATION_URL = "https://paypal.me/AndreasHutter?locale.x=de_DE&country.x=AT"
 
-private val HOLD_CONFIRM_OPTIONS = listOf(
-    "Aus" to 0,
-    "0,2 s" to 200,
-    "0,5 s" to 500,
-    "1 s" to 1000,
-    "2 s" to 2000
-)
+private val HOLD_CONFIRM_VALUES = listOf(0, 200, 500, 1000, 2000)
 
-private fun holdConfirmLabel(ms: Int): String =
-    HOLD_CONFIRM_OPTIONS.firstOrNull { it.second == ms }?.first ?: "$ms ms"
+@Composable
+private fun holdConfirmLabel(ms: Int): String = when (ms) {
+    0 -> stringResource(R.string.hold_confirm_off)
+    200 -> stringResource(R.string.hold_confirm_0_2s)
+    500 -> stringResource(R.string.hold_confirm_0_5s)
+    1000 -> stringResource(R.string.hold_confirm_1s)
+    2000 -> stringResource(R.string.hold_confirm_2s)
+    else -> "$ms ms"
+}
+
+private val LANGUAGE_TAGS = listOf("", "de", "en")
+
+@Composable
+private fun languageLabel(tag: String): String = when (tag) {
+    "de" -> "Deutsch"
+    "en" -> "English"
+    else -> stringResource(R.string.language_system)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +88,8 @@ fun SettingsScreen(onBack: () -> Unit) {
     var goeAutoAuthorize by rememberSaveable { mutableStateOf(SettingsRepository.goeAutoAuthorize) }
     var holdConfirmMs by rememberSaveable { mutableStateOf(SettingsRepository.holdConfirmMs) }
     var holdConfirmMenuExpanded by remember { mutableStateOf(false) }
+    var languageTag by remember { mutableStateOf(SettingsRepository.language) }
+    var languageMenuExpanded by remember { mutableStateOf(false) }
 
     val evccHostValid = isValidIpv4(evccHost)
     val evccPortValid = isValidPort(evccPort)
@@ -93,10 +108,10 @@ fun SettingsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Einstellungen") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -116,17 +131,17 @@ fun SettingsScreen(onBack: () -> Unit) {
                 OutlinedTextField(
                     value = evccHost,
                     onValueChange = { evccHost = it.trim() },
-                    label = { Text("IP-Adresse") },
+                    label = { Text(stringResource(R.string.ip_address_label)) },
                     isError = !evccHostValid,
-                    supportingText = { if (!evccHostValid) Text("Ungültige oder keine private IPv4-Adresse (10.x, 172.16-31.x, 192.168.x)") },
+                    supportingText = { if (!evccHostValid) Text(stringResource(R.string.ip_address_error)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = evccPort,
                     onValueChange = { evccPort = it.trim() },
-                    label = { Text("Port") },
+                    label = { Text(stringResource(R.string.port_label)) },
                     isError = !evccPortValid,
-                    supportingText = { if (!evccPortValid) Text("Port muss zwischen 1 und 65535 liegen") },
+                    supportingText = { if (!evccPortValid) Text(stringResource(R.string.port_error)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -139,16 +154,16 @@ fun SettingsScreen(onBack: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Checkbox(checked = goeEnabled, onCheckedChange = { goeEnabled = it })
-                    Text("go-e Wallbox aktivieren")
+                    Text(stringResource(R.string.goe_enable))
                 }
 
                 if (goeEnabled) {
                     OutlinedTextField(
                         value = goeHost,
                         onValueChange = { goeHost = it.trim() },
-                        label = { Text("IP-Adresse") },
+                        label = { Text(stringResource(R.string.ip_address_label)) },
                         isError = !goeHostValid,
-                        supportingText = { if (!goeHostValid) Text("Ungültige oder keine private IPv4-Adresse (10.x, 172.16-31.x, 192.168.x)") },
+                        supportingText = { if (!goeHostValid) Text(stringResource(R.string.ip_address_error)) },
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -160,7 +175,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             value = goeTrx.toString(),
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Authentifizierung auf RFID") },
+                            label = { Text(stringResource(R.string.goe_rfid_label)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = goeTrxMenuExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -187,13 +202,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Checkbox(checked = goeAutoAuthorize, onCheckedChange = { goeAutoAuthorize = it })
-                        Text("automatisch autorisieren")
+                        Text(stringResource(R.string.goe_auto_authorize))
                     }
                 }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Bedienung", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.operation_section), style = MaterialTheme.typography.titleMedium)
                 ExposedDropdownMenuBox(
                     expanded = holdConfirmMenuExpanded,
                     onExpandedChange = { holdConfirmMenuExpanded = it }
@@ -202,7 +217,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         value = holdConfirmLabel(holdConfirmMs),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Haltezeit zum Bestätigen:") },
+                        label = { Text(stringResource(R.string.hold_confirm_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = holdConfirmMenuExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -212,12 +227,48 @@ fun SettingsScreen(onBack: () -> Unit) {
                         expanded = holdConfirmMenuExpanded,
                         onDismissRequest = { holdConfirmMenuExpanded = false }
                     ) {
-                        HOLD_CONFIRM_OPTIONS.forEach { (label, ms) ->
+                        HOLD_CONFIRM_VALUES.forEach { ms ->
                             DropdownMenuItem(
-                                text = { Text(label) },
+                                text = { Text(holdConfirmLabel(ms)) },
                                 onClick = {
                                     holdConfirmMs = ms
                                     holdConfirmMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.language_section), style = MaterialTheme.typography.titleMedium)
+                ExposedDropdownMenuBox(
+                    expanded = languageMenuExpanded,
+                    onExpandedChange = { languageMenuExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = languageLabel(languageTag),
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageMenuExpanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = languageMenuExpanded,
+                        onDismissRequest = { languageMenuExpanded = false }
+                    ) {
+                        LANGUAGE_TAGS.forEach { tag ->
+                            DropdownMenuItem(
+                                text = { Text(languageLabel(tag)) },
+                                onClick = {
+                                    languageTag = tag
+                                    languageMenuExpanded = false
+                                    SettingsRepository.language = tag
+                                    // Re-runs MainActivity.attachBaseContext() with the new
+                                    // preference, which is what actually applies the locale.
+                                    (context as? Activity)?.recreate()
                                 }
                             )
                         }
@@ -239,7 +290,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 enabled = canSave,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Speichern")
+                Text(stringResource(R.string.save))
             }
 
             Card(
@@ -250,15 +301,15 @@ fun SettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("Über", style = MaterialTheme.typography.titleMedium)
-                    Text("ChargeControl" + (appVersion?.let { " $it" } ?: ""))
-                    Text("Entwickelt von Andreas Hutter")
+                    Text(stringResource(R.string.about_section), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.app_name) + (appVersion?.let { " $it" } ?: ""))
+                    Text(stringResource(R.string.about_developer))
                     TextButton(
                         onClick = {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(DONATION_URL)))
                         }
                     ) {
-                        Text("Spenden")
+                        Text(stringResource(R.string.donate))
                     }
                 }
             }

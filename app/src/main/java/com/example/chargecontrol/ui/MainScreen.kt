@@ -47,8 +47,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.chargecontrol.R
 import com.example.chargecontrol.ui.theme.ChargeControlTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -82,10 +84,10 @@ fun MainScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("ChargeControl") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Einstellungen")
+                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_title))
                     }
                 }
             )
@@ -105,7 +107,7 @@ fun MainScreen(
 
             if (goeEnabled) {
                 HoldToConfirmButton(
-                    "go-e Autorisierung",
+                    stringResource(R.string.goe_authorize),
                     isActive = false,
                     holdMs = holdConfirmMs,
                     outlined = true,
@@ -118,25 +120,25 @@ fun MainScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 HoldToConfirmButton(
-                    "kW min + PV Überschuss (Min+PV)",
+                    stringResource(R.string.mode_minpv),
                     isActive = uiState.mode == "minpv",
                     holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("minpv") }
                 HoldToConfirmButton(
-                    "PV-Überschuss (PV)",
+                    stringResource(R.string.mode_pv),
                     isActive = uiState.mode == "pv",
                     holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("pv") }
                 HoldToConfirmButton(
-                    "Schnellladen (Schnell)",
+                    stringResource(R.string.mode_now),
                     isActive = uiState.mode == "now",
                     holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
                 ) { onModeSelected("now") }
                 HoldToConfirmButton(
-                    "Laden stoppen",
+                    stringResource(R.string.stop_charging),
                     isActive = false,
                     holdMs = holdConfirmMs,
                     outlined = true,
@@ -166,23 +168,34 @@ private fun StatusCard(uiState: UiState) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                    Text("Lade Status …")
+                    Text(stringResource(R.string.loading_status))
                 }
             } else if (!uiState.hasData) {
-                Text("Kein Status verfügbar")
+                Text(stringResource(R.string.no_status_available))
             } else {
-                Text("Modus: ${modeLabel(uiState.mode)}")
-                Text("Phasen: ${phasesLabel(uiState.phasesConfigured)}")
-                Text("Ladestrom: ${uiState.offeredCurrent.roundToInt()} A - ${activePhasesLabel(uiState.phasesActive)}")
-                Text("Fahrzeug verbunden: ${if (uiState.connected) "Ja" else "Nein"}")
+                Text(stringResource(R.string.status_mode, modeLabel(uiState.mode)))
+                Text(stringResource(R.string.status_phases, phasesLabel(uiState.phasesConfigured)))
+                Text(
+                    stringResource(
+                        R.string.status_current,
+                        uiState.offeredCurrent.roundToInt(),
+                        activePhasesLabel(uiState.phasesActive)
+                    )
+                )
+                Text(
+                    stringResource(
+                        R.string.status_vehicle_connected,
+                        stringResource(if (uiState.connected) R.string.yes else R.string.no)
+                    )
+                )
                 if (uiState.connected) {
-                    Text("Ladestand: ${uiState.vehicleSoc} %")
+                    Text(stringResource(R.string.status_battery_level, uiState.vehicleSoc))
                 }
                 Text(
                     when {
-                        uiState.charging -> "Lädt gerade"
-                        uiState.connected -> "Verbunden, lädt nicht"
-                        else -> "Nicht verbunden"
+                        uiState.charging -> stringResource(R.string.status_charging_now)
+                        uiState.connected -> stringResource(R.string.status_connected_not_charging)
+                        else -> stringResource(R.string.status_not_connected)
                     }
                 )
             }
@@ -209,33 +222,33 @@ private fun AdvancedSettings(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Checkbox(checked = unlocked, onCheckedChange = { unlocked = it })
-            Text("Ladestrom Einstellungen")
+            Text(stringResource(R.string.charging_current_settings))
         }
 
         if (unlocked) {
-            Text("Phasen", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.phases_label), style = MaterialTheme.typography.labelLarge)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SelectableButton(
-                    "Automatisch",
+                    stringResource(R.string.phases_automatic),
                     isActive = uiState.phasesConfigured == 0,
                     modifier = Modifier.weight(1f)
                 ) { onPhasesSelected(0) }
                 SelectableButton(
-                    "1-phasig",
+                    stringResource(R.string.phases_1),
                     isActive = uiState.phasesConfigured == 1,
                     modifier = Modifier.weight(1f)
                 ) { onPhasesSelected(1) }
                 SelectableButton(
-                    "3-phasig",
+                    stringResource(R.string.phases_3),
                     isActive = uiState.phasesConfigured == 3,
                     modifier = Modifier.weight(1f)
                 ) { onPhasesSelected(3) }
             }
 
-            Text("Mindest-Ladestrom: $sliderValue A", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.min_current_label, sliderValue), style = MaterialTheme.typography.labelLarge)
             Slider(
                 value = sliderValue.toFloat(),
                 onValueChange = { pending = it.roundToInt() },
@@ -351,23 +364,26 @@ private fun SelectableButton(
     }
 }
 
+@Composable
 private fun modeLabel(mode: String): String = when (mode) {
-    "minpv" -> "kW min + PV Überschuss (Min+PV)"
-    "pv" -> "PV-Überschuss (PV)"
-    "now" -> "Schnellladen (Schnell)"
-    "off" -> "Aus"
+    "minpv" -> stringResource(R.string.mode_minpv)
+    "pv" -> stringResource(R.string.mode_pv)
+    "now" -> stringResource(R.string.mode_now)
+    "off" -> stringResource(R.string.mode_off)
     else -> mode
 }
 
+@Composable
 private fun phasesLabel(phasesConfigured: Int): String = when (phasesConfigured) {
-    1 -> "1-phasig"
-    3 -> "3-phasig"
-    else -> "Automatisch"
+    1 -> stringResource(R.string.phases_1)
+    3 -> stringResource(R.string.phases_3)
+    else -> stringResource(R.string.phases_automatic)
 }
 
+@Composable
 private fun activePhasesLabel(phasesActive: Int): String = when (phasesActive) {
-    1 -> "1-phasig"
-    3 -> "3-phasig"
+    1 -> stringResource(R.string.phases_1)
+    3 -> stringResource(R.string.phases_3)
     else -> "–"
 }
 

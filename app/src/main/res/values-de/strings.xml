@@ -1,0 +1,59 @@
+<resources>
+    <string name="app_name">ChargeControl</string>
+
+    <!-- Hauptbildschirm -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="back">Zurück</string>
+    <string name="mode_minpv">kW min + PV Überschuss (Min+PV)</string>
+    <string name="mode_pv">PV-Überschuss (PV)</string>
+    <string name="mode_now">Schnellladen (Schnell)</string>
+    <string name="mode_off">Aus</string>
+    <string name="stop_charging">Laden stoppen</string>
+    <string name="goe_authorize">go-e Autorisierung</string>
+    <string name="loading_status">Lade Status …</string>
+    <string name="no_status_available">Kein Status verfügbar</string>
+    <string name="status_mode">Modus: %1$s</string>
+    <string name="status_phases">Phasen: %1$s</string>
+    <string name="status_current">Ladestrom: %1$d A - %2$s</string>
+    <string name="status_vehicle_connected">Fahrzeug verbunden: %1$s</string>
+    <string name="yes">Ja</string>
+    <string name="no">Nein</string>
+    <string name="status_battery_level">Ladestand: %1$d %%</string>
+    <string name="status_charging_now">Lädt gerade</string>
+    <string name="status_connected_not_charging">Verbunden, lädt nicht</string>
+    <string name="status_not_connected">Nicht verbunden</string>
+    <string name="charging_current_settings">Ladestrom Einstellungen</string>
+    <string name="phases_label">Phasen</string>
+    <string name="phases_automatic">Automatisch</string>
+    <string name="phases_1">1-phasig</string>
+    <string name="phases_3">3-phasig</string>
+    <string name="min_current_label">Mindest-Ladestrom: %1$d A</string>
+
+    <!-- Einstellungsbildschirm -->
+    <string name="ip_address_label">IP-Adresse</string>
+    <string name="ip_address_error">Ungültige oder keine private IPv4-Adresse (10.x, 172.16-31.x, 192.168.x)</string>
+    <string name="port_label">Port</string>
+    <string name="port_error">Port muss zwischen 1 und 65535 liegen</string>
+    <string name="goe_enable">go-e Wallbox aktivieren</string>
+    <string name="goe_rfid_label">Authentifizierung auf RFID</string>
+    <string name="goe_auto_authorize">automatisch autorisieren</string>
+    <string name="operation_section">Bedienung</string>
+    <string name="hold_confirm_label">Haltezeit zum Bestätigen:</string>
+    <string name="hold_confirm_off">Aus</string>
+    <string name="hold_confirm_0_2s">0,2 s</string>
+    <string name="hold_confirm_0_5s">0,5 s</string>
+    <string name="hold_confirm_1s">1 s</string>
+    <string name="hold_confirm_2s">2 s</string>
+    <string name="language_section">Sprache</string>
+    <string name="language_system">Systemsprache</string>
+    <string name="save">Speichern</string>
+    <string name="about_section">Über</string>
+    <string name="about_developer">Entwickelt von Andreas Hutter</string>
+    <string name="donate">Spenden</string>
+
+    <!-- Berechtigungsbildschirm für lokales Netzwerk -->
+    <string name="local_network_permission_rationale">Diese App braucht Zugriff auf dein lokales Netzwerk, um evcc und die Wallbox zu erreichen.</string>
+    <string name="local_network_permission_denied">Die Berechtigung wurde abgelehnt. Bitte in den App-Einstellungen manuell aktivieren.</string>
+    <string name="open_settings">Einstellungen öffnen</string>
+    <string name="grant_permission">Berechtigung erteilen</string>
+</resources>

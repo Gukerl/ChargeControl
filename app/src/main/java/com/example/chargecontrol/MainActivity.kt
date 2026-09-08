@@ -1,11 +1,14 @@
 package com.example.chargecontrol
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -49,6 +53,10 @@ import com.example.chargecontrol.ui.theme.ChargeControlTheme
 private const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(wrapWithLanguagePreference(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SettingsRepository.init(this)
@@ -63,6 +71,32 @@ class MainActivity : ComponentActivity() {
 
 private fun hasLocalNetworkPermission(context: android.content.Context): Boolean =
     ContextCompat.checkSelfPermission(context, LOCAL_NETWORK_PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+/**
+ * Wraps [base] with a manually chosen [Locale] if the user picked one in
+ * Settings, so `stringResource()` (and every other resource lookup) resolves
+ * against it. Read directly from SharedPreferences rather than through
+ * [SettingsRepository] — this runs in [MainActivity.attachBaseContext],
+ * which executes before `onCreate()` calls `SettingsRepository.init()`.
+ *
+ * Deliberately not using `AppCompatDelegate.setApplicationLocales()`: per
+ * Google's own documentation, that API only reliably applies a locale change
+ * in a Compose app when the Activity extends `AppCompatActivity` — ours is a
+ * plain `ComponentActivity`, and the AppCompatDelegate-based first attempt at
+ * this feature silently failed to persist a manual language choice for
+ * exactly that reason.
+ */
+private fun wrapWithLanguagePreference(base: Context): Context {
+    val prefs = base.getSharedPreferences(SharedPreferencesKeyValueStore.PREFS_NAME, Context.MODE_PRIVATE)
+    val languageTag = prefs.getString(SettingsRepository.KEY_LANGUAGE, SettingsRepository.DEFAULT_LANGUAGE)
+        ?: SettingsRepository.DEFAULT_LANGUAGE
+    if (languageTag.isEmpty()) return base
+
+    val locale = Locale.forLanguageTag(languageTag)
+    val config = Configuration(base.resources.configuration)
+    config.setLocale(locale)
+    return base.createConfigurationContext(config)
+}
 
 @Composable
 fun ChargeControlApp() {
@@ -175,15 +209,15 @@ private fun LocalNetworkPermissionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Diese App braucht Zugriff auf dein lokales Netzwerk, um evcc und die Wallbox zu erreichen.")
+            Text(stringResource(R.string.local_network_permission_rationale))
             if (showSettingsButton) {
-                Text("Die Berechtigung wurde abgelehnt. Bitte in den App-Einstellungen manuell aktivieren.")
+                Text(stringResource(R.string.local_network_permission_denied))
                 Button(onClick = onOpenSettings) {
-                    Text("Einstellungen öffnen")
+                    Text(stringResource(R.string.open_settings))
                 }
             } else {
                 Button(onClick = onRequestPermission) {
-                    Text("Berechtigung erteilen")
+                    Text(stringResource(R.string.grant_permission))
                 }
             }
         }

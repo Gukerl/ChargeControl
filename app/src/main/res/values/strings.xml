@@ -1,3 +1,59 @@
 <resources>
     <string name="app_name">ChargeControl</string>
+
+    <!-- Main screen -->
+    <string name="settings_title">Settings</string>
+    <string name="back">Back</string>
+    <string name="mode_minpv">kW min + PV surplus (Min+PV)</string>
+    <string name="mode_pv">PV surplus (PV)</string>
+    <string name="mode_now">Fast charging (Fast)</string>
+    <string name="mode_off">Off</string>
+    <string name="stop_charging">Stop charging</string>
+    <string name="goe_authorize">go-e authorization</string>
+    <string name="loading_status">Loading status …</string>
+    <string name="no_status_available">No status available</string>
+    <string name="status_mode">Mode: %1$s</string>
+    <string name="status_phases">Phases: %1$s</string>
+    <string name="status_current">Charging current: %1$d A - %2$s</string>
+    <string name="status_vehicle_connected">Vehicle connected: %1$s</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="status_battery_level">Battery level: %1$d %%</string>
+    <string name="status_charging_now">Charging now</string>
+    <string name="status_connected_not_charging">Connected, not charging</string>
+    <string name="status_not_connected">Not connected</string>
+    <string name="charging_current_settings">Charging current settings</string>
+    <string name="phases_label">Phases</string>
+    <string name="phases_automatic">Automatic</string>
+    <string name="phases_1">1-phase</string>
+    <string name="phases_3">3-phase</string>
+    <string name="min_current_label">Minimum charging current: %1$d A</string>
+
+    <!-- Settings screen -->
+    <string name="ip_address_label">IP address</string>
+    <string name="ip_address_error">Invalid or not a private IPv4 address (10.x, 172.16-31.x, 192.168.x)</string>
+    <string name="port_label">Port</string>
+    <string name="port_error">Port must be between 1 and 65535</string>
+    <string name="goe_enable">Enable go-e wallbox</string>
+    <string name="goe_rfid_label">RFID authentication</string>
+    <string name="goe_auto_authorize">Authorize automatically</string>
+    <string name="operation_section">Operation</string>
+    <string name="hold_confirm_label">Hold to confirm:</string>
+    <string name="hold_confirm_off">Off</string>
+    <string name="hold_confirm_0_2s">0.2 s</string>
+    <string name="hold_confirm_0_5s">0.5 s</string>
+    <string name="hold_confirm_1s">1 s</string>
+    <string name="hold_confirm_2s">2 s</string>
+    <string name="language_section">Language</string>
+    <string name="language_system">System language</string>
+    <string name="save">Save</string>
+    <string name="about_section">About</string>
+    <string name="about_developer">Developed by Andreas Hutter</string>
+    <string name="donate">Donate</string>
+
+    <!-- Local network permission screen -->
+    <string name="local_network_permission_rationale">This app needs access to your local network to reach evcc and the wallbox.</string>
+    <string name="local_network_permission_denied">Permission was denied. Please enable it manually in the app settings.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="grant_permission">Grant permission</string>
 </resources>
