@@ -179,6 +179,7 @@ fun ChargeControlApp() {
         MainScreen(
             uiState = uiState,
             onModeSelected = viewModel::setMode,
+            onAlwaysChargeOn = viewModel::setAlwaysChargeOn,
             onStop = { viewModel.setMode("off") },
             onErrorShown = viewModel::errorShown,
             onPhasesSelected = viewModel::setPhases,

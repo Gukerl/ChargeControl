@@ -43,19 +43,22 @@ class WallboxViewModelTest {
         charging: Boolean = false,
         minCurrent: Double = 6.0,
         phasesActive: Int = 0,
-        vehicleSoc: Double? = 0.0
-    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent, phasesActive, vehicleSoc)
+        vehicleSoc: Double? = 0.0,
+        alwaysCharge: String = "off"
+    ) = LoadpointDto(mode, phasesConfigured, offeredCurrent, connected, charging, minCurrent, phasesActive, vehicleSoc, alwaysCharge)
 
     private class FakeEvccApi(
         var state: EvccStateResponse,
         var stateError: Throwable? = null,
         var setModeResponse: Response<ResponseBody> = Response.success(null),
         var setPhasesResponse: Response<ResponseBody> = Response.success(null),
-        var setMinCurrentResponse: Response<ResponseBody> = Response.success(null)
+        var setMinCurrentResponse: Response<ResponseBody> = Response.success(null),
+        var setAlwaysChargeResponse: Response<ResponseBody> = Response.success(null)
     ) : EvccApi {
         var lastModeSet: String? = null
         var lastPhasesSet: String? = null
         var lastMinCurrentSet: Int? = null
+        var lastAlwaysChargeSet: String? = null
         var fetchCount = 0
 
         override suspend fun getState(): EvccStateResponse {
@@ -78,6 +81,11 @@ class WallboxViewModelTest {
             lastMinCurrentSet = current
             return setMinCurrentResponse
         }
+
+        override suspend fun setAlwaysCharge(id: Int, alwaysCharge: String): Response<ResponseBody> {
+            lastAlwaysChargeSet = alwaysCharge
+            return setAlwaysChargeResponse
+        }
     }
 
     private class FakeGoeApi(
@@ -97,7 +105,7 @@ class WallboxViewModelTest {
 
     @Test
     fun `onStart loads initial state without sending any control command`() = runTest {
-        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "pv", offeredCurrent = 9.5))))
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "smart", offeredCurrent = 9.5))))
         val viewModel = WallboxViewModel(
             evccApi,
             FakeGoeApi(),
@@ -109,7 +117,7 @@ class WallboxViewModelTest {
         viewModel.onStart()
         dispatcher.scheduler.runCurrent()
 
-        assertEquals("pv", viewModel.uiState.value.mode)
+        assertEquals("smart", viewModel.uiState.value.mode)
         assertEquals(9.5, viewModel.uiState.value.offeredCurrent, 0.0)
         assertEquals(false, viewModel.uiState.value.isLoading)
         assertEquals(1, evccApi.fetchCount)
@@ -198,7 +206,7 @@ class WallboxViewModelTest {
 
     @Test
     fun `setMode posts the new mode and refreshes state`() = runTest {
-        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "minpv"))))
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "smart"))))
         val viewModel = WallboxViewModel(
             evccApi,
             FakeGoeApi(),
@@ -207,11 +215,111 @@ class WallboxViewModelTest {
             goeAutoAuthorizeProvider = { false }
         )
 
-        viewModel.setMode("minpv")
+        viewModel.setMode("smart")
         dispatcher.scheduler.runCurrent()
 
-        assertEquals("minpv", evccApi.lastModeSet)
-        assertEquals("minpv", viewModel.uiState.value.mode)
+        assertEquals("smart", evccApi.lastModeSet)
+        assertEquals("smart", viewModel.uiState.value.mode)
+    }
+
+    @Test
+    fun `setMode also resets always-charge to off, since evcc does not do this itself`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "now"))))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.setMode("now")
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("now", evccApi.lastModeSet)
+        assertEquals("off", evccApi.lastAlwaysChargeSet)
+    }
+
+    @Test
+    fun `setMode skips the always-charge reset and surfaces the error if setting mode fails`() = runTest {
+        val evccApi = FakeEvccApi(
+            state = EvccStateResponse(listOf(loadpoint())),
+            setModeResponse = Response.error(500, "".toResponseBody(null))
+        )
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.setMode("now")
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(null, evccApi.lastAlwaysChargeSet)
+        assertEquals("evcc-Fehler (500)", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `setAlwaysChargeOn sets mode to smart and enables always charge`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "smart", alwaysCharge = "on"))))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.setAlwaysChargeOn()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("smart", evccApi.lastModeSet)
+        assertEquals("on", evccApi.lastAlwaysChargeSet)
+        assertEquals("smart", viewModel.uiState.value.mode)
+        assertEquals("on", viewModel.uiState.value.alwaysCharge)
+    }
+
+    @Test
+    fun `setAlwaysChargeOn skips the always-charge call and surfaces the error if setting mode fails`() = runTest {
+        val evccApi = FakeEvccApi(
+            state = EvccStateResponse(listOf(loadpoint())),
+            setModeResponse = Response.error(500, "".toResponseBody(null))
+        )
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.setAlwaysChargeOn()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("smart", evccApi.lastModeSet)
+        assertEquals(null, evccApi.lastAlwaysChargeSet)
+        assertEquals("evcc-Fehler (500)", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `fetchState populates alwaysCharge`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint(mode = "smart", alwaysCharge = "on"))))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            FakeGoeApi(),
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals("on", viewModel.uiState.value.alwaysCharge)
+
+        viewModel.onStop()
     }
 
     @Test

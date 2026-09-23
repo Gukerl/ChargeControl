@@ -22,6 +22,7 @@ import kotlin.math.roundToInt
 
 data class UiState(
     val mode: String = "",
+    val alwaysCharge: String = "off",
     val phasesConfigured: Int = 0,
     val offeredCurrent: Double = 0.0,
     val minCurrent: Int = 6,
@@ -65,8 +66,27 @@ class WallboxViewModel(
         pollingJob = null
     }
 
+    /**
+     * evcc does not reset the `alwaysCharge` overlay when the mode is changed
+     * via this REST endpoint (only evcc's own web UI does that) — so every
+     * plain mode change explicitly turns it off, to guarantee a clean,
+     * unambiguous state for "off"/"now"/plain "smart". [setAlwaysChargeOn] is
+     * the one deliberate exception that turns it on instead.
+     */
     fun setMode(mode: String) = performLoadpointUpdate {
-        evccApi.setMode(Config.LOADPOINT_ID, mode)
+        val modeResponse = evccApi.setMode(Config.LOADPOINT_ID, mode)
+        if (!modeResponse.isSuccessful) modeResponse else evccApi.setAlwaysCharge(Config.LOADPOINT_ID, "off")
+    }
+
+    /**
+     * The old "min + PV" mode no longer exists as a `mode` value in evcc —
+     * it's now smart mode with the always-charge overlay enabled. Replicates
+     * the old behavior with two calls; if setting the mode fails, the
+     * always-charge call is skipped and that failure is surfaced instead.
+     */
+    fun setAlwaysChargeOn() = performLoadpointUpdate {
+        val modeResponse = evccApi.setMode(Config.LOADPOINT_ID, "smart")
+        if (!modeResponse.isSuccessful) modeResponse else evccApi.setAlwaysCharge(Config.LOADPOINT_ID, "on")
     }
 
     fun setPhases(phases: Int) = performLoadpointUpdate {
@@ -157,6 +177,7 @@ class WallboxViewModel(
             _uiState.update {
                 it.copy(
                     mode = loadpoint.mode,
+                    alwaysCharge = loadpoint.alwaysCharge,
                     phasesConfigured = loadpoint.phasesConfigured,
                     offeredCurrent = loadpoint.offeredCurrent,
                     minCurrent = loadpoint.minCurrent.roundToInt(),

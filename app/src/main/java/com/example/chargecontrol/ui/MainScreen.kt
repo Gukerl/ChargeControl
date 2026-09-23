@@ -61,6 +61,7 @@ import kotlin.math.roundToInt
 fun MainScreen(
     uiState: UiState,
     onModeSelected: (String) -> Unit,
+    onAlwaysChargeOn: () -> Unit,
     onStop: () -> Unit,
     onErrorShown: () -> Unit,
     onPhasesSelected: (Int) -> Unit,
@@ -121,16 +122,16 @@ fun MainScreen(
             ) {
                 HoldToConfirmButton(
                     stringResource(R.string.mode_minpv),
-                    isActive = uiState.mode == "minpv",
+                    isActive = uiState.mode == "smart" && uiState.alwaysCharge != "off",
                     holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
-                ) { onModeSelected("minpv") }
+                ) { onAlwaysChargeOn() }
                 HoldToConfirmButton(
                     stringResource(R.string.mode_pv),
-                    isActive = uiState.mode == "pv",
+                    isActive = uiState.mode == "smart" && uiState.alwaysCharge == "off",
                     holdMs = holdConfirmMs,
                     modifier = Modifier.fillMaxWidth()
-                ) { onModeSelected("pv") }
+                ) { onModeSelected("smart") }
                 HoldToConfirmButton(
                     stringResource(R.string.mode_now),
                     isActive = uiState.mode == "now",
@@ -173,7 +174,7 @@ private fun StatusCard(uiState: UiState) {
             } else if (!uiState.hasData) {
                 Text(stringResource(R.string.no_status_available))
             } else {
-                Text(stringResource(R.string.status_mode, modeLabel(uiState.mode)))
+                Text(stringResource(R.string.status_mode, modeLabel(uiState.mode, uiState.alwaysCharge)))
                 Text(stringResource(R.string.status_phases, phasesLabel(uiState.phasesConfigured)))
                 Text(
                     stringResource(
@@ -364,12 +365,17 @@ private fun SelectableButton(
     }
 }
 
+/**
+ * evcc no longer has separate "minpv"/"pv" mode values — both now report
+ * `mode == "smart"`, distinguished only by the independent `alwaysCharge`
+ * overlay flag ("smart" replaced "pv"; "minpv" became smart mode + always-charge).
+ */
 @Composable
-private fun modeLabel(mode: String): String = when (mode) {
-    "minpv" -> stringResource(R.string.mode_minpv)
-    "pv" -> stringResource(R.string.mode_pv)
-    "now" -> stringResource(R.string.mode_now)
-    "off" -> stringResource(R.string.mode_off)
+private fun modeLabel(mode: String, alwaysCharge: String): String = when {
+    mode == "smart" && alwaysCharge != "off" -> stringResource(R.string.mode_minpv)
+    mode == "smart" -> stringResource(R.string.mode_pv)
+    mode == "now" -> stringResource(R.string.mode_now)
+    mode == "off" -> stringResource(R.string.mode_off)
     else -> mode
 }
 
@@ -393,7 +399,7 @@ private fun MainScreenChargingPreview() {
     ChargeControlTheme {
         MainScreen(
             uiState = UiState(
-                mode = "pv",
+                mode = "smart",
                 phasesConfigured = 0,
                 offeredCurrent = 14.0,
                 minCurrent = 6,
@@ -405,6 +411,7 @@ private fun MainScreenChargingPreview() {
                 hasData = true
             ),
             onModeSelected = {},
+            onAlwaysChargeOn = {},
             onStop = {},
             onErrorShown = {},
             onPhasesSelected = {},
@@ -435,6 +442,7 @@ private fun MainScreenDisconnectedPreview() {
                 hasData = true
             ),
             onModeSelected = {},
+            onAlwaysChargeOn = {},
             onStop = {},
             onErrorShown = {},
             onPhasesSelected = {},
@@ -454,6 +462,7 @@ private fun MainScreenLoadingPreview() {
         MainScreen(
             uiState = UiState(isLoading = true, hasData = false),
             onModeSelected = {},
+            onAlwaysChargeOn = {},
             onStop = {},
             onErrorShown = {},
             onPhasesSelected = {},

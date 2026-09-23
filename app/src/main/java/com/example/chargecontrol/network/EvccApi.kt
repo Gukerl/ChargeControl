@@ -16,7 +16,8 @@ data class LoadpointDto(
     val charging: Boolean,
     val minCurrent: Double,
     val phasesActive: Int,
-    val vehicleSoc: Double? = null
+    val vehicleSoc: Double? = null,
+    val alwaysCharge: String = "off"
 )
 
 @Serializable
@@ -36,4 +37,7 @@ interface EvccApi {
 
     @POST("loadpoints/{id}/mincurrent/{current}")
     suspend fun setMinCurrent(@Path("id") id: Int, @Path("current") current: Int): Response<ResponseBody>
+
+    @POST("loadpoints/{id}/alwayscharge/{alwaysCharge}")
+    suspend fun setAlwaysCharge(@Path("id") id: Int, @Path("alwaysCharge") alwaysCharge: String): Response<ResponseBody>
 }

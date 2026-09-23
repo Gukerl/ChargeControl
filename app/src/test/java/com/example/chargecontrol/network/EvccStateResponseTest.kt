@@ -16,7 +16,8 @@ class EvccStateResponseTest {
             {
               "loadpoints": [
                 {
-                  "mode": "pv",
+                  "mode": "smart",
+                  "alwaysCharge": "on",
                   "phasesConfigured": 3,
                   "offeredCurrent": 9.5,
                   "connected": true,
@@ -36,7 +37,8 @@ class EvccStateResponseTest {
         val result = json.decodeFromString<EvccStateResponse>(payload)
 
         val loadpoint = result.loadpoints.single()
-        assertEquals("pv", loadpoint.mode)
+        assertEquals("smart", loadpoint.mode)
+        assertEquals("on", loadpoint.alwaysCharge)
         assertEquals(3, loadpoint.phasesConfigured)
         assertEquals(9.5, loadpoint.offeredCurrent, 0.0)
         assertEquals(true, loadpoint.connected)
@@ -44,6 +46,27 @@ class EvccStateResponseTest {
         assertEquals(6.0, loadpoint.minCurrent, 0.0)
         assertEquals(1, loadpoint.phasesActive)
         assertEquals(82.0, loadpoint.vehicleSoc!!, 0.0)
+    }
+
+    @Test
+    fun `alwaysCharge defaults to off when the field is absent`() {
+        val payload = """
+            {
+              "loadpoints": [
+                {
+                  "mode": "now",
+                  "phasesConfigured": 0,
+                  "offeredCurrent": 0.0,
+                  "connected": false,
+                  "charging": false,
+                  "minCurrent": 6,
+                  "phasesActive": 0
+                }
+              ]
+            }
+        """.trimIndent()
+
+        assertEquals("off", json.decodeFromString<EvccStateResponse>(payload).loadpoints.single().alwaysCharge)
     }
 
     @Test

@@ -1,0 +1,1 @@
+Anpassung an evccs neue Lade-API: "PV-Überschuss" heißt jetzt intern "Smart", "kW min + PV Überschuss" ist jetzt ein eigenes "Dauerhaft laden"-Flag statt eines Modus. Neu: Sprachumschaltung Deutsch/Englisch (automatisch nach Systemsprache oder manuell in den Einstellungen).
