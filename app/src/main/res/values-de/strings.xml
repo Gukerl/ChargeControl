@@ -19,6 +19,7 @@
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
     <string name="status_battery_level">Ladestand: %1$d %%</string>
+    <string name="status_goe_authorized">go-e autorisiert: %1$s</string>
     <string name="status_charging_now">Lädt gerade</string>
     <string name="status_connected_not_charging">Verbunden, lädt nicht</string>
     <string name="status_not_connected">Nicht verbunden</string>

@@ -4,6 +4,7 @@ import com.example.chargecontrol.Config
 import com.example.chargecontrol.network.EvccApi
 import com.example.chargecontrol.network.EvccStateResponse
 import com.example.chargecontrol.network.GoeApi
+import com.example.chargecontrol.network.GoeStatusDto
 import com.example.chargecontrol.network.LoadpointDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -90,16 +91,25 @@ class WallboxViewModelTest {
 
     private class FakeGoeApi(
         var authorizeResponse: Response<ResponseBody> = Response.success(null),
-        var authorizeError: Throwable? = null
+        var authorizeError: Throwable? = null,
+        var status: GoeStatusDto = GoeStatusDto(trx = null),
+        var statusError: Throwable? = null
     ) : GoeApi {
         var lastTrx: Int? = null
         var authorizeCallCount = 0
+        var statusCallCount = 0
 
         override suspend fun authorize(trx: Int): Response<ResponseBody> {
             authorizeCallCount++
             lastTrx = trx
             authorizeError?.let { throw it }
             return authorizeResponse
+        }
+
+        override suspend fun getStatus(filter: String): GoeStatusDto {
+            statusCallCount++
+            statusError?.let { throw it }
+            return status
         }
     }
 
@@ -747,6 +757,87 @@ class WallboxViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertEquals(1, goeApi.authorizeCallCount)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState populates goeAuthorized true when go-e reports a non-null trx`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi(status = GoeStatusDto(trx = 1))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(true, viewModel.uiState.value.goeAuthorized)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState populates goeAuthorized false when go-e reports a null trx`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi(status = GoeStatusDto(trx = null))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(false, viewModel.uiState.value.goeAuthorized)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState does not query go-e status when go-e is disabled`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi()
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { false },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(0, goeApi.statusCallCount)
+
+        viewModel.onStop()
+    }
+
+    @Test
+    fun `fetchState does not surface an error when the go-e status call fails`() = runTest {
+        val evccApi = FakeEvccApi(EvccStateResponse(listOf(loadpoint())))
+        val goeApi = FakeGoeApi(statusError = IOException("offline"))
+        val viewModel = WallboxViewModel(
+            evccApi,
+            goeApi,
+            goeTrxProvider = { 1 },
+            goeEnabledProvider = { true },
+            goeAutoAuthorizeProvider = { false }
+        )
+
+        viewModel.onStart()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(false, viewModel.uiState.value.goeAuthorized)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
 
         viewModel.onStop()
     }

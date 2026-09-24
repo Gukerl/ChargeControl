@@ -70,6 +70,7 @@ fun MainScreen(
     onGoeAuthorize: () -> Unit,
     holdConfirmMs: Long,
     goeEnabled: Boolean,
+    goeAutoAuthorize: Boolean,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -104,9 +105,13 @@ fun MainScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            StatusCard(uiState)
+            StatusCard(uiState, goeEnabled)
 
-            if (goeEnabled) {
+            // Hidden once auto-authorize has already done its job — nothing left to
+            // trigger manually. Users without auto-authorize always keep the button,
+            // since it's their only way to (re-)authorize.
+            val hideGoeButton = goeEnabled && goeAutoAuthorize && uiState.goeAuthorized
+            if (goeEnabled && !hideGoeButton) {
                 HoldToConfirmButton(
                     stringResource(R.string.goe_authorize),
                     isActive = false,
@@ -157,7 +162,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun StatusCard(uiState: UiState) {
+private fun StatusCard(uiState: UiState, goeEnabled: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors()
@@ -191,6 +196,14 @@ private fun StatusCard(uiState: UiState) {
                 )
                 if (uiState.connected) {
                     Text(stringResource(R.string.status_battery_level, uiState.vehicleSoc))
+                }
+                if (goeEnabled) {
+                    Text(
+                        stringResource(
+                            R.string.status_goe_authorized,
+                            stringResource(if (uiState.goeAuthorized) R.string.yes else R.string.no)
+                        )
+                    )
                 }
                 Text(
                     when {
@@ -419,7 +432,8 @@ private fun MainScreenChargingPreview() {
             onSettingsClick = {},
             onGoeAuthorize = {},
             holdConfirmMs = 1000L,
-            goeEnabled = true
+            goeEnabled = true,
+            goeAutoAuthorize = false
         )
     }
 }
@@ -450,7 +464,8 @@ private fun MainScreenDisconnectedPreview() {
             onSettingsClick = {},
             onGoeAuthorize = {},
             holdConfirmMs = 1000L,
-            goeEnabled = true
+            goeEnabled = true,
+            goeAutoAuthorize = false
         )
     }
 }
@@ -470,7 +485,8 @@ private fun MainScreenLoadingPreview() {
             onSettingsClick = {},
             onGoeAuthorize = {},
             holdConfirmMs = 1000L,
-            goeEnabled = true
+            goeEnabled = true,
+            goeAutoAuthorize = false
         )
     }
 }

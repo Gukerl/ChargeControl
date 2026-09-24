@@ -190,7 +190,8 @@ fun ChargeControlApp() {
             },
             onGoeAuthorize = viewModel::authorizeGoe,
             holdConfirmMs = SettingsRepository.holdConfirmMs.toLong(),
-            goeEnabled = SettingsRepository.goeEnabled
+            goeEnabled = SettingsRepository.goeEnabled,
+            goeAutoAuthorize = SettingsRepository.goeAutoAuthorize
         )
     }
 }

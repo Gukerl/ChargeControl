@@ -30,6 +30,7 @@ data class UiState(
     val charging: Boolean = false,
     val phasesActive: Int = 0,
     val vehicleSoc: Int = 0,
+    val goeAuthorized: Boolean = false,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val hasData: Boolean = false
@@ -191,6 +192,7 @@ class WallboxViewModel(
                 )
             }
             maybeAutoAuthorizeGoe(loadpoint.connected)
+            fetchGoeAuthorized()
         } catch (e: IOException) {
             wasUnreachable = true
             _uiState.update { it.copy(isLoading = false, errorMessage = "EVCC nicht erreichbar, überprüfe WLAN oder EVCC Raspi") }
@@ -200,6 +202,24 @@ class WallboxViewModel(
             throw e
         } catch (e: Exception) {
             _uiState.update { it.copy(isLoading = false, errorMessage = "Unerwartete Antwort von evcc") }
+        }
+    }
+
+    /**
+     * Reads whether the wallbox currently has an active go-e authorization
+     * (`trx` non-null), only when go-e is enabled. Failures are swallowed —
+     * this is a display-only detail, it must never disrupt the evcc status
+     * poll it's called from.
+     */
+    private suspend fun fetchGoeAuthorized() {
+        if (!goeEnabledProvider()) return
+        try {
+            val status = goeApi.getStatus()
+            _uiState.update { it.copy(goeAuthorized = status.trx != null) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Display-only; leave the last known value rather than surfacing an error here.
         }
     }
 }

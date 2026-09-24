@@ -1,0 +1,1 @@
+Statuskarte zeigt jetzt, ob die go-e Wallbox aktuell autorisiert ist. Der "go-e Autorisierung"-Button wird automatisch ausgeblendet, sobald automatische Autorisierung aktiv ist und die Wallbox bereits autorisiert wurde.
